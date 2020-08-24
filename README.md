@@ -1,1 +1,3 @@
-# Self Balancing Robot Project
+# PID Controlled Pendulum Bot
+
+
