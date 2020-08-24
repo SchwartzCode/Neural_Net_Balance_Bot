@@ -5,7 +5,9 @@ v4 = can balance robot without USB cord attached when helped initially by human
 v5 - tried to use Arduino PID library (was awful - it would only generate positive outputs which didn't work with my control flow at all)
 v6 - looked into doing PID about just one input variable (angle of inclination, normally I looked at gyro data also)
 v7 - tried squaring error term
-v8 - adjusted alpha to 0.1, switched to conventional PID control (before was more P-D-D^2)
+v8 = adjusted alpha to 0.1, switched to conventional PID control (before was more P-D-D^2)
 v9 - removed deadzone at small errors, used Ziegler-Nichols method to tune gains
 v10 - minimal deadzone, hand-tuned gains by eye
 v11 - trying instructables tuning method [https://www.instructables.com/id/Augmented-Arthropod-Self-Balancing-Mech/]
+
+= indicates most effective controllers
