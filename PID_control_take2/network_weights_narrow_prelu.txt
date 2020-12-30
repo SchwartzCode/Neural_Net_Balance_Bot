@@ -1,0 +1,20 @@
+Validation Accuracy:	0.4074<bound method Module.parameters of Sequential(
+  (0): Linear(in_features=4, out_features=4, bias=True)
+  (1): PReLU(num_parameters=1)
+  (2): Linear(in_features=4, out_features=4, bias=True)
+  (3): PReLU(num_parameters=1)
+  (4): Linear(in_features=4, out_features=4, bias=True)
+  (5): PReLU(num_parameters=1)
+  (6): Linear(in_features=4, out_features=1, bias=True)
+)>tensor([[ 1.4621,  0.7608,  0.3224, -0.0466],
+        [-6.9008, -2.3136, -1.5420,  0.4045],
+        [-7.0260, -1.7432, -7.0833,  0.5906],
+        [ 0.4640, -0.9705,  5.5680, -0.6428]], dtype=torch.float64)tensor([-0.6293, -2.0451, -7.2368,  9.1608], dtype=torch.float64)tensor([3.0855], dtype=torch.float64)tensor([[-0.7894,  1.2954,  1.6756, -1.0369],
+        [ 0.0145,  0.0259,  0.5214, -1.1769],
+        [-0.7504,  1.3959,  1.7393, -1.0195],
+        [-1.0285, -1.3415, -2.0490, -1.5206]], dtype=torch.float64)tensor([  2.2081, -14.0166,  10.6972,   8.1292], dtype=torch.float64)tensor([-0.8889], dtype=torch.float64)tensor([[ 1.5537,  0.6382,  1.2401, -3.7253],
+        [ 0.9798,  1.3929,  0.8834, -2.2312],
+        [ 0.8629,  0.6869,  1.5094, -3.3553],
+        [ 0.1385, -1.5287, -0.1665,  3.0042]], dtype=torch.float64)tensor([  8.3482,  35.6564,  15.4623, -10.6990], dtype=torch.float64)tensor([-1.1786], dtype=torch.float64)tensor([[-1.4852, -1.3687, -1.5994,  1.9713]], dtype=torch.float64)tensor([6.7008], dtype=torch.float64)=================================================
+
+
