@@ -9,6 +9,8 @@ import torch.nn.functional as F
 
 import random
 
+import matplotlib.pyplot as plt
+
 use_cuda = torch.cuda.is_available()
 # random unsigned 32 bit integer, cast to uint64 because manual_seed() wants 64 bits
 #   note: it's fine that the front 32 bits will all be zeros, although could be good
@@ -53,23 +55,30 @@ for index, line in enumerate(fileData):
         network_input = np.zeros((dataLen-preDataLineCount,4)) # Nx4 numpy array
         network_output = np.zeros(dataLen-preDataLineCount) # N length numpy array
 
-train_input = network_input[:-1000,:]
-fileData_input = network_input[-1000:,:]
 
-train_output = network_output[:-1000]
-fileData_output = network_output[-1000:]
+# extract testing data and training data from all data
+test_vals = np.random.choice(np.arange(network_input.shape[0]), 5000, replace=False)
+fileData_input = network_input[test_vals,:]
+fileData_output = network_output[test_vals]
+
+train_input = np.delete(network_input, test_vals, axis=0)
+train_output = np.delete(network_output, test_vals)
+
 
 print('Data all sorted!')
 
+# one layer of (4,1) capped out around 35% training acc and 12% testing acc
+# one layer (4,50) and next (50,1) gave ~1.7m error, 52% training acc, 21.3% testing acc
+# deep & thin (many layers of 4) seems to be decent but large variance on results
 network = nn.Sequential(
-    nn.Linear(4, 25),
-    nn.ReLU(),
-    nn.Linear(25, 10),
-    nn.ReLU(),
-    # nn.Linear(10, 4),
-    # nn.ReLU(),
-    nn.Linear(10, 1),
-    nn.ReLU()
+    nn.Linear(4, 4),
+    nn.PReLU(),
+    nn.Linear(4, 4),
+    nn.PReLU(),
+    nn.Linear(4, 4),
+    nn.PReLU(),
+    nn.Linear(4, 1)#,
+    # nn.ReLU()
 ).double()
 
 
@@ -77,9 +86,9 @@ network = nn.Sequential(
 
 
 # HYPER-PARAMETERS
-batch_size = 200
-learning_rate = 15e-3
-max_iters =500
+batch_size = 50
+learning_rate = 3e-3
+max_iters = 200
 
 # initialize arrays, split data into batches, prepare torch Optimizer
 batches = get_random_batches(train_input,train_output,batch_size)
@@ -133,10 +142,28 @@ probs_np = probs.detach().numpy()
 y = torch.tensor( fileData_output )
 fileData_est_output = network( torch.tensor(fileData_input) )
 
-y_pred = torch.flatten(network( torch.tensor(fileData_input) ))
-valid_loss, valid_acc = compute_loss_and_acc(fileData_output, y_pred.detach().numpy())
+y_pred = torch.flatten(fileData_est_output).detach().numpy()
+valid_loss, valid_acc = compute_loss_and_acc(fileData_output, y_pred)
 
-print(ep, '\tValid Acc:\t', valid_acc)
+print("woopie time!!!")
+for j in range(y_pred.shape[0]):
+    print(fileData_output[j], '\t', y_pred[j], '\t', fileData_input[j,:])
+
+print('\tValid Acc:\t', valid_acc)
 print('\tValid Loss:\t', valid_loss, '\n')
 
 print("Seed Used:\t", seed)
+
+plt.plot(np.arange(max_iters), training_acc)
+plt.show()
+
+f = open("network_weights.txt", "w")
+f.write('Validation Accuracy:\t')
+f.write(str(valid_acc))
+f.write(str(network.parameters))
+
+for param in network.parameters():
+    f.write(str(param.data))
+
+f.write('=================================================\n\n\n')
+f.close()
