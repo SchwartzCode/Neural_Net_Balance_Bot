@@ -6,22 +6,23 @@ Self balancing robot controller using PID, and then training a neural network to
 ## Neural network setup
 
 Input: \[acceleration about y, acceleration about x, rotational velocity about x, integral of error (used in PID)]
+
 Output: \[ PWM duty cycle ]
 
 Layers:
 
-Input \[4]
+* Input \[4]
 
-Hidden \[4]
+* Hidden \[4]
 
-PReLU
+* PReLU
 
-Hidden \[4]
+* Hidden \[4]
 
-PReLU
+* PReLU
 
-Hidden \[4]
+* Hidden \[4]
 
-PReLU
+* PReLU
 
-Output \[1]
+* Output \[1]
