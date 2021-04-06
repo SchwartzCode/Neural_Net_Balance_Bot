@@ -11,10 +11,17 @@ Output: \[ PWM duty cycle ]
 Layers:
 
 Input \[4]
+
 Hidden \[4]
+
 PReLU
+
 Hidden \[4]
+
 PReLU
+
 Hidden \[4]
+
 PReLU
+
 Output \[1]
