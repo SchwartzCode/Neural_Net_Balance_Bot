@@ -38,6 +38,9 @@ void setup(void) {
 
   // open Serial interface
   Serial.begin(115200);
+
+
+  
   while (!Serial)
     delay(10); // will pause Zero, Leonardo, etc until serial console opens
 
@@ -134,9 +137,9 @@ void loop() {
   mpu.getEvent(&a, &g, &temp);
 
   // correct for IMU offsets (determined experimentally)
-  double z_accel = a.acceleration.z + 1.6;
-  double y_accel = a.acceleration.y + 0.5;
-  double x_accel = a.acceleration.x - 0.67;
+  double x_accel = a.acceleration.x - 0.78;
+  double y_accel = a.acceleration.y + 0.35;
+  double z_accel = a.acceleration.z + 1.78;
   double gyro_x = g.gyro.x + 0.05;
 
   // calculate accelerometer & gyroscope angle estimates
@@ -171,7 +174,7 @@ void loop() {
   Serial.print(" ");
   Serial.print(I_error);
   Serial.print(" ");
-  Serial.println(PID_PWM);
+  Serial.println(PID_PWM); // output
 
   // clip PWM value at limits of range (0 and 255)
   if (outPWM > maxPWM) {

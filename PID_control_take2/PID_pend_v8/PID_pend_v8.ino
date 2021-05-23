@@ -122,9 +122,11 @@ void loop() {
   mpu.getEvent(&a, &g, &temp);
 
 
-  double z_accel = a.acceleration.z + 2.3;
-  double y_accel = a.acceleration.y + 0.37;
-  double x_accel = a.acceleration.x - 0.67;
+  // correct for IMU offsets (determined experimentally)
+  double x_accel = a.acceleration.x - 0.78;
+  double y_accel = a.acceleration.y + 0.35;
+  double z_accel = a.acceleration.z + 1.78;
+  double gyro_x = g.gyro.x + 0.05;
 
   double angle_accel = atan(y_accel / z_accel);
   double angle_gyro = g.gyro.x * dt;
@@ -134,7 +136,7 @@ void loop() {
 
   
 
-  float D_error = -0.05 - g.gyro.x;
+  float D_error = - g.gyro.x;
   float error = - angle;
   
   float P = -3200 * error; //-1350 * error;
@@ -160,8 +162,6 @@ void loop() {
 
   int outPWM = abs(PID_PWM);
 
-
-
   if (outPWM > maxPWM) {
     outPWM = maxPWM;
   } else if (outPWM < minPWM) {
@@ -185,11 +185,11 @@ void loop() {
   
 if ((abs(D_error) + abs(error)) > 0.1) {
    if(PID_PWM > 0) {
-      //Serial.println("BACKWARD!!");
+      // BACKWARD
       digitalWrite(12, LOW);
       digitalWrite(13, HIGH);
     } else {
-      //Serial.println("FORWARD!");
+      // FORWARD
       digitalWrite(12, HIGH);
       digitalWrite(13, LOW);
     }
@@ -200,9 +200,6 @@ if ((abs(D_error) + abs(error)) > 0.1) {
   analogWrite(11, 0);
   cumError = 0;
 }
-
-  
-
  
   lastTime = currTime;
 }
