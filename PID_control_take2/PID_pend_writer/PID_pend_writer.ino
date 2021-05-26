@@ -126,12 +126,7 @@ void setup(void) {
   pinMode(13, OUTPUT);
 }
 
-void loop() {
-  //get time when loop starts
-  currTime = millis(); 
-  //calculate time since last loop started
-  unsigned long elapsedTime = currTime - lastTime; 
-
+void readSensors(double *gyro_x){
   /* Get new sensor events with the readings */
   sensors_event_t a, g, temp;
   mpu.getEvent(&a, &g, &temp);
@@ -140,41 +135,45 @@ void loop() {
   double x_accel = a.acceleration.x - 0.78;
   double y_accel = a.acceleration.y + 0.35;
   double z_accel = a.acceleration.z + 1.78;
-  double gyro_x = g.gyro.x + 0.05;
+  *gyro_x = g.gyro.x + 0.05;
 
   // calculate accelerometer & gyroscope angle estimates
   double angle_accel = atan(y_accel / z_accel);
-  double angle_gyro = angle + gyro_x * dt;
+  double angle_gyro = angle + *gyro_x * dt;
 
   // blend two estimates together
   angle = (1 - alpha) * (angle_gyro) + alpha*angle_accel;
+}
 
+float attitude_PID(float *PID_PWM, int *outPWM, const float gyro_x){
   // determine error terms using IMU readings
   float D_error = -gyro_x;
   float error = -angle;
-  I_error += error*elapsedTime;
+  I_error += error*dt;
 
   // determine P, I, and D terms using errors and gains
-  P = -3200 * error;
-  I = -35 * I_error;
-  D = -270 * D_error;
+  P = -2500 * error;
+  I = -1250 * I_error;
+  D = -200 * D_error;
 
   // sum P I D terms to get desired PWM output to motors
-  float PID_PWM = P + I + D;
+  *PID_PWM = P + I + D; //apply positional PID here too
 
   // force positive since analogWrite only takes values in range (0,255)
-  int outPWM = abs(PID_PWM);
+  *outPWM = abs(*PID_PWM);
 
-  // print values that will be used to train Neural Network
-  Serial.print(y_accel);
-  Serial.print(" ");
-  Serial.print(x_accel);
-  Serial.print(" ");
-  Serial.print(gyro_x);
-  Serial.print(" ");
-  Serial.print(I_error);
-  Serial.print(" ");
-  Serial.println(PID_PWM); // output
+  return D_error;
+}
+
+void loop() {
+
+  double angle = 0;
+  double gyro_x = 0;
+  readSensors(&gyro_x);
+
+  float PID_PWM = 0.0;
+  int outPWM = 0;
+  float D_error = attitude_PID(&PID_PWM, &outPWM, gyro_x);
 
   // clip PWM value at limits of range (0 and 255)
   if (outPWM > maxPWM) {
@@ -186,28 +185,21 @@ void loop() {
     outPWM = (int) abs(PID_PWM);
   }
 
-  
-  if ((abs(D_error) + abs(error)) > 0.1) {
-     if(PID_PWM > 0) {
-        // we want wheels to move backward
-        digitalWrite(12, LOW);
-        digitalWrite(13, HIGH);
-      } else {
-        // we want wheels to move forward
-        digitalWrite(12, HIGH);
-        digitalWrite(13, LOW);
-      }
+   if(PID_PWM > 0) {
+      // we want wheels to move backward
+      digitalWrite(12, LOW);
+      digitalWrite(13, HIGH);
+    } else {
+      // we want wheels to move forward
+      digitalWrite(12, HIGH);
+      digitalWrite(13, LOW);
+    }
     // errors are too large, send current to motors to correct!
     analogWrite(3, outPWM);
     analogWrite(11, outPWM);
-  } else {
-    // errors are small enough; no need to drive motors
-    analogWrite(3, 0);
-    analogWrite(11, 0);
-    // reset I term to prevent integral windup
+
+  if (abs(D_error) < 0.1) {
     I_error = 0;
   }
 
-  // lastTime is now the time when this pass through loop started
-  lastTime = currTime; 
 }
