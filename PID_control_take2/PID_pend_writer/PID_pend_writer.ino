@@ -6,40 +6,24 @@
 
 Adafruit_MPU6050 mpu; //initialize IMU object
 // bounds for PWM values - used to clip input to analogWrite()
-uint8_t maxPWM = 255;
-uint8_t minPWM = 0;
+#define maxPWM  255
+#define minPWM  0
 
-// used to measure time at beginning and end of each loop
-unsigned long currTime = 0;
-unsigned long lastTime = 0;
-const double dt = 0.0033;
+#define dt  0.0033 //found empirically, probably a bit off but close enough
 
 // constant used to blend accelerometer & gyroscope angle estimates
 //(1-alpha)*angle_gyro
-float alpha = 0.05; 
+#define alpha  0.05 
 
 // initialize variables
 float angle = 0.0;
-float lastAngle = 0.0;
-float I_error = 0.0;
-
-// not used currently but will maybe eventually move gains up here
-//float Kp = 75;
-//float Ki = 0.0;
-//float Kd = 0.0;          
-
-// initialize PID terms 
-float P = 0.0;
-float I = 0.0;
-float D = 0.0;
+float I_error = 0.0;    
 
   
 void setup(void) {
 
   // open Serial interface
   Serial.begin(115200);
-
-
   
   while (!Serial)
     delay(10); // will pause Zero, Leonardo, etc until serial console opens
@@ -152,15 +136,25 @@ float attitude_PID(float *PID_PWM, int *outPWM, const float gyro_x){
   I_error += error*dt;
 
   // determine P, I, and D terms using errors and gains
-  P = -2500 * error;
-  I = -1250 * I_error;
-  D = -200 * D_error;
+  float P = -2500 * error;
+  float I = -1250 * I_error;
+  float D = -200 * D_error;
 
   // sum P I D terms to get desired PWM output to motors
   *PID_PWM = P + I + D; //apply positional PID here too
 
   // force positive since analogWrite only takes values in range (0,255)
   *outPWM = abs(*PID_PWM);
+
+    // clip PWM value at limits of range (0 and 255)
+  if (*outPWM > maxPWM) {
+    *outPWM = maxPWM;
+  } else if (*outPWM < minPWM) {
+     *outPWM = minPWM;
+  } else {
+    // no clipping needed, must cast to int though (analogWrite() takes ints)
+    *outPWM = (int) abs(*PID_PWM);
+  }
 
   return D_error;
 }
@@ -174,16 +168,6 @@ void loop() {
   float PID_PWM = 0.0;
   int outPWM = 0;
   float D_error = attitude_PID(&PID_PWM, &outPWM, gyro_x);
-
-  // clip PWM value at limits of range (0 and 255)
-  if (outPWM > maxPWM) {
-    outPWM = maxPWM;
-  } else if (outPWM < minPWM) {
-     outPWM = minPWM;
-  } else {
-    // no clipping needed, must cast to int though (analogWrite() takes ints)
-    outPWM = (int) abs(PID_PWM);
-  }
 
    if(PID_PWM > 0) {
       // we want wheels to move backward
