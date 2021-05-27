@@ -146,7 +146,7 @@ void loop() {
 
     // update sensor readings
     x_accel += a.acceleration.x - 0.78;
-    y_accel += a.acceleration.y + 0.35;
+    y_accel += a.acceleration.y + 0.425;
     z_accel += a.acceleration.z +1.78;
     gyro_x += g.gyro.x + 0.05;
   }

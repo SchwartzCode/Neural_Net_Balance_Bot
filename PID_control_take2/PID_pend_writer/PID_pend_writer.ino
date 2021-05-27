@@ -17,7 +17,9 @@ Adafruit_MPU6050 mpu; //initialize IMU object
 
 // initialize variables
 float angle = 0.0;
-float I_error = 0.0;    
+float I_error = 0.0;
+float y_vel = 0.0;
+float y_pos = 0.0;
 
   
 void setup(void) {
@@ -103,13 +105,16 @@ void setup(void) {
   delay(100);
 
   // what information we'll be printing out (for training neural network)
-  Serial.println("y_accel | z_accel | gyro_x | I_error | PID_PWM");
+//  Serial.println("y_accel | z_accel | gyro_x | I_error | PID_PWM");
 
   // toggle pins connected to motor controller to output
   pinMode(12, OUTPUT);
   pinMode(13, OUTPUT);
 }
 
+/*
+ *  Read accelerometer and gyroscope data from IMU
+ */
 void readSensors(double *gyro_x){
   /* Get new sensor events with the readings */
   sensors_event_t a, g, temp;
@@ -117,7 +122,7 @@ void readSensors(double *gyro_x){
 
   // correct for IMU offsets (determined experimentally)
   double x_accel = a.acceleration.x - 0.78;
-  double y_accel = a.acceleration.y + 0.35;
+  double y_accel = a.acceleration.y + 0.425;
   double z_accel = a.acceleration.z + 1.78;
   *gyro_x = g.gyro.x + 0.05;
 
@@ -127,8 +132,16 @@ void readSensors(double *gyro_x){
 
   // blend two estimates together
   angle = (1 - alpha) * (angle_gyro) + alpha*angle_accel;
+
+  // update y velocity using acceleration
+  y_vel += y_accel*dt;
+  // update y_position using y_vel
+  y_pos += y_vel*dt;
 }
 
+/*
+ *  Calculate PWM duty cycle to apply to motore given estimated angular position & velocity
+ */
 float attitude_PID(float *PID_PWM, int *outPWM, const float gyro_x){
   // determine error terms using IMU readings
   float D_error = -gyro_x;
@@ -178,12 +191,19 @@ void loop() {
       digitalWrite(12, HIGH);
       digitalWrite(13, LOW);
     }
-    // errors are too large, send current to motors to correct!
+    // write PWM duty cycle to motors
     analogWrite(3, outPWM);
     analogWrite(11, outPWM);
 
+  // reset I term when angular vel is low to prevent windup
+  //    note: didn't include error because it's alright if angle is a bit off (esp. when trying to move to different translational position)
   if (abs(D_error) < 0.1) {
     I_error = 0;
   }
+
+  
+  Serial.println(y_vel);
+  Serial.println(y_pos);
+  Serial.println();
 
 }
