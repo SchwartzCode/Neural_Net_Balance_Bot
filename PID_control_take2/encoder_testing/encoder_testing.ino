@@ -22,14 +22,13 @@ void loop()
   Serial.print("Pos:");
   Serial.println(wheel_pos);
   duration = 0;
-  delay(100);
 }
 
 void EncoderInit()
 {
   Direction = true;//default -> Forward
   pinMode(encoder0pinB,INPUT);
-  attachInterrupt(0, wheelSpeed, CHANGE);
+  attachInterrupt(0, readEncoder, CHANGE);
 }
 
 void readEncoder()
