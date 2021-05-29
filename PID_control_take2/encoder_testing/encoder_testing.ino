@@ -1,11 +1,13 @@
 //The sample code for driving one way motor encoder
-const byte encoder0pinA = 4;//A pin -> the interrupt pin 0
-const byte encoder0pinB = 5;//B pin -> the digital pin 3
+const byte encoder0pinA = 2;//A pin -> the interrupt pin 0
+const byte encoder0pinB = 4;//B pin -> the digital pin 3
 byte encoder0PinALast;
-int duration;//the number of the pulses
+int duration = 0;//the number of the pulses
 boolean Direction;//the rotation direction
 
-int pos = 0;
+int wheel_pos = 0; // distance travelled by wheel (in encoder ticks)
+// TODO: is int big enough? may need long
+
 
 void setup()
 {
@@ -15,15 +17,19 @@ void setup()
 
 void loop()
 {
-  readEncoder(); //TODO: rename
-//  delay(10);
-  Serial.println(pos);
+//  Serial.print("Pulse:");
+//  Serial.println(duration);
+  Serial.print("Pos:");
+  Serial.println(wheel_pos);
+  duration = 0;
+  delay(100);
 }
 
 void EncoderInit()
 {
   Direction = true;//default -> Forward
   pinMode(encoder0pinB,INPUT);
+  attachInterrupt(0, wheelSpeed, CHANGE);
 }
 
 void readEncoder()
@@ -40,15 +46,9 @@ void readEncoder()
     {
       Direction = true;  //Forward
     }
-    // maybe just subtract by more than 1? do some empirical testing
-    if(Direction){
-      pos++;
-    } else {
-      pos--;
-    }
   }
   encoder0PinALast = Lstate;
 
-  if(!Direction)  duration++;
-  else  duration--;
+  if(!Direction)  wheel_pos++;
+  else  wheel_pos--;
 }
