@@ -18,14 +18,24 @@ Adafruit_MPU6050 mpu; //initialize IMU object
 // initialize variables
 float angle = 0.0;
 float I_error = 0.0;
-float y_vel = 0.0;
-float y_pos = 0.0;
+
+// encoder variables
+const byte encoder0pinA = 2;//A pin -> the interrupt pin 0
+const byte encoder0pinB = 4;//B pin -> the digital pin 3
+byte encoder0PinALast;
+int duration = 0;//the number of the pulses
+boolean Direction;//the rotation direction
+
+int wheel_pos = 0; // distance travelled by wheel (in encoder ticks)
+// TODO: is int big enough? may need long
 
   
 void setup(void) {
 
   // open Serial interface
   Serial.begin(115200);
+
+  EncoderInit();
   
   while (!Serial)
     delay(10); // will pause Zero, Leonardo, etc until serial console opens
@@ -113,6 +123,40 @@ void setup(void) {
 }
 
 /*
+ * Initialize encoder pins
+ */
+void EncoderInit()
+{
+  Direction = true;//default -> Forward
+  pinMode(encoder0pinB,INPUT);
+  attachInterrupt(0, readEncoder, CHANGE);
+}
+
+/*
+ * Interrupt routine for reading encoder data
+ */
+void readEncoder()
+{
+  int Lstate = digitalRead(encoder0pinA);
+  if((encoder0PinALast == LOW) && Lstate==HIGH)
+  {
+    int val = digitalRead(encoder0pinB);
+    if(val == LOW && Direction)
+    {
+      Direction = false; //Reverse
+    }
+    else if(val == HIGH && !Direction)
+    {
+      Direction = true;  //Forward
+    }
+  }
+  encoder0PinALast = Lstate;
+
+  if(!Direction)  wheel_pos++;
+  else  wheel_pos--;
+}
+
+/*
  *  Read accelerometer and gyroscope data from IMU
  */
 void readSensors(double *gyro_x){
@@ -133,10 +177,6 @@ void readSensors(double *gyro_x){
   // blend two estimates together
   angle = (1 - alpha) * (angle_gyro) + alpha*angle_accel;
 
-  // update y velocity using acceleration
-  y_vel += y_accel*dt;
-  // update y_position using y_vel
-  y_pos += y_vel*dt;
 }
 
 /*
@@ -201,9 +241,6 @@ void loop() {
     I_error = 0;
   }
 
-  
-  Serial.println(y_vel);
-  Serial.println(y_pos);
-  Serial.println();
+//  Serial.println(wheel_pos);
 
 }
