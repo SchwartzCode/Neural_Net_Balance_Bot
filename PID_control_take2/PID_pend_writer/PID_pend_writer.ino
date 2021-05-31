@@ -15,6 +15,11 @@ Adafruit_MPU6050 mpu; //initialize IMU object
 //(1-alpha)*angle_gyro
 #define alpha  0.05 
 
+// constants for calculating distance travelled from encoder ticks
+#define TICKS_PER_REV  1920
+#define WHEEL_RADIUS   0.033  // [m]
+#define WHEEL_CIRCUMF  0.2073 // [m]
+
 byte newEncoderData = 0;
 
 // initialize variables
@@ -28,10 +33,9 @@ byte encoder0PinALast;
 int duration = 0;//the number of the pulses
 boolean Direction;//the rotation direction
 
-int wheel_pos = 0; // distance travelled by wheel (in encoder ticks)
-// TODO: is int big enough? may need long
+long wheel_pos = 0; // distance travelled by wheel (in encoder ticks)
+long desired_pos = TICKS_PER_REV * 0.15 / WHEEL_CIRCUMF; //position in ticks to drive robot to (pos initially in m)
 
-  
 void setup(void) {
 
   // open Serial interface
@@ -131,7 +135,7 @@ void readSensors(double *gyro_x){
 /*
  *  Calculate PWM duty cycle to apply to motore given estimated angular position & velocity
  */
-float attitude_PID(float *PID_PWM, int *outPWM, const float gyro_x){
+float attitude_PID(float *PID_PWM, const float gyro_x){
   // determine error terms using IMU readings
   float D_error = -gyro_x;
   float error = -angle;
@@ -145,21 +149,29 @@ float attitude_PID(float *PID_PWM, int *outPWM, const float gyro_x){
   // sum P I D terms to get desired PWM output to motors
   *PID_PWM = P + I + D; //apply positional PID here too
 
-  // force positive since analogWrite only takes values in range (0,255)
-  *outPWM = abs(*PID_PWM);
-
-    // clip PWM value at limits of range (0 and 255)
-  if (*outPWM > maxPWM) {
-    *outPWM = maxPWM;
-  } else if (*outPWM < minPWM) {
-     *outPWM = minPWM;
-  } else {
-    // no clipping needed, must cast to int though (analogWrite() takes ints)
-    *outPWM = (int) abs(*PID_PWM);
-  }
-
   return D_error;
 }
+
+/*
+ * Calculate desired PWM for position PID
+ */
+ void position_PID(float *PID_PWM){
+  *PID_PWM = (desired_pos - wheel_pos);
+  clamp_pos_PWM(PID_PWM);
+ }
+
+ /*
+  * clamp position PWM to a resonable range (-100,100)
+  */
+  void clamp_pos_PWM(float *PWM_position){
+    max_val = 100.0;
+    
+    if(*PWM_position > max_val){
+      *PWM_position = max_val;
+    } else if (*PWM_position < -max_val){
+      *PWM_position = -max_val;
+    }
+  }
 
 void loop() {
 
@@ -169,8 +181,26 @@ void loop() {
   readSensors(&gyro_x);
 
   float PID_PWM = 0.0;
+  float PWM_attitude = 0.0;
+  float PWM_position = 0.0;
   int outPWM = 0;
-  float D_error = attitude_PID(&PID_PWM, &outPWM, gyro_x);
+  float D_error = attitude_PID(&PWM_attitude, gyro_x);
+  position_PID(&PWM_position);
+
+  PID_PWM = 0.75*PWM_attitude + 0.25*PWM_position;
+
+  // force positive since analogWrite only takes values in range (0,255)
+  outPWM = abs(PID_PWM);
+
+    // clip PWM value at limits of range (0 and 255)
+  if (outPWM > maxPWM) {
+    outPWM = maxPWM;
+  } else if (outPWM < minPWM) {
+     outPWM = minPWM;
+  } else {
+    // no clipping needed, must cast to int though (analogWrite() takes ints)
+    outPWM = (int) abs(PID_PWM);
+  }
 
    if(PID_PWM > 0) {
       // we want wheels to move backward
@@ -191,7 +221,10 @@ void loop() {
     I_error = 0;
   }
 
-//  readEncoder();
-  Serial.println(wheel_pos);
+  Serial.println(PID_PWM);
+  Serial.println(PWM_attitude);
+  Serial.println(PWM_position);
+  Serial.println(I_error);
+  Serial.println("\n");
 
 }
