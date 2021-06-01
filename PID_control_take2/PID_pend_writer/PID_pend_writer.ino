@@ -34,7 +34,8 @@ int duration = 0;//the number of the pulses
 boolean Direction;//the rotation direction
 
 long wheel_pos = 0; // distance travelled by wheel (in encoder ticks)
-long desired_pos = TICKS_PER_REV * 0.15 / WHEEL_CIRCUMF; //position in ticks to drive robot to (pos initially in m)
+long wheel_pos_last = 0; // last position of wheels (for calculating d term)
+long desired_pos = TICKS_PER_REV * 0.5 / WHEEL_CIRCUMF; //position in ticks to drive robot to (pos initially in m)
 
 void setup(void) {
 
@@ -118,8 +119,8 @@ void readSensors(double *gyro_x){
   mpu.getEvent(&a, &g, &temp);
 
   // correct for IMU offsets (determined experimentally)
-  double x_accel = a.acceleration.x - 0.78;
-  double y_accel = a.acceleration.y + 0.425;
+  double x_accel = a.acceleration.x - 0.68;
+  double y_accel = a.acceleration.y + 0.35;
   double z_accel = a.acceleration.z + 1.78;
   *gyro_x = g.gyro.x + 0.05;
 
@@ -142,12 +143,17 @@ float attitude_PID(float *PID_PWM, const float gyro_x){
   I_error += error*dt;
 
   // determine P, I, and D terms using errors and gains
-  float P = -2500 * error;
+  float P = -3000 * error;
   float I = -1250 * I_error;
-  float D = -200 * D_error;
+  float D = -300 * D_error;
 
   // sum P I D terms to get desired PWM output to motors
-  *PID_PWM = P + I + D; //apply positional PID here too
+  *PID_PWM = P + I + D; //apply positional PID here
+
+//  Serial.println("==========");
+//  Serial.println(P);
+//  Serial.println(I);
+//  Serial.println(D);
 
   return D_error;
 }
@@ -156,15 +162,25 @@ float attitude_PID(float *PID_PWM, const float gyro_x){
  * Calculate desired PWM for position PID
  */
  void position_PID(float *PID_PWM){
-  *PID_PWM = (desired_pos - wheel_pos);
+  float P = -(desired_pos - wheel_pos) / 10;
+  float D = (wheel_pos - wheel_pos_last) / (dt * 10);
+  
+  if(D > 15.0){
+    *PID_PWM = P + D;
+  } else {
+    *PID_PWM = P;
+  }
+  
   clamp_pos_PWM(PID_PWM);
+
+  wheel_pos_last = wheel_pos;
  }
 
  /*
   * clamp position PWM to a resonable range (-100,100)
   */
   void clamp_pos_PWM(float *PWM_position){
-    max_val = 100.0;
+    float max_val = 100.0;
     
     if(*PWM_position > max_val){
       *PWM_position = max_val;
@@ -187,7 +203,8 @@ void loop() {
   float D_error = attitude_PID(&PWM_attitude, gyro_x);
   position_PID(&PWM_position);
 
-  PID_PWM = 0.75*PWM_attitude + 0.25*PWM_position;
+//  PID_PWM = 0.75*PWM_attitude + 0.25*PWM_position;
+  PID_PWM = PWM_attitude - 75 + PWM_position; // offset corrects for robot being slightly off-balance (will vary between bots)
 
   // force positive since analogWrite only takes values in range (0,255)
   outPWM = abs(PID_PWM);
@@ -221,10 +238,12 @@ void loop() {
     I_error = 0;
   }
 
-  Serial.println(PID_PWM);
-  Serial.println(PWM_attitude);
-  Serial.println(PWM_position);
-  Serial.println(I_error);
-  Serial.println("\n");
+//  Serial.println("~~~~~~~~~~~~~");
+//  Serial.println(PID_PWM);
+//  Serial.println(PWM_attitude);
+//  Serial.println(PWM_position);
+//  Serial.println(wheel_pos);
+//  Serial.println(desired_pos);
+//  Serial.println("\n");
 
 }
