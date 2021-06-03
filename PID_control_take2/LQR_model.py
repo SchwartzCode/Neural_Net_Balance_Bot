@@ -1,4 +1,5 @@
 import numpy as np
+import control
 
 class pendulum_bot(object):
     def __init__(self, initial_state=np.zeros(4)):
