@@ -1,2 +1,2 @@
 numpy
-conda install -c conda-forge control
+control
