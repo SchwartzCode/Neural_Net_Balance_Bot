@@ -20,7 +20,7 @@ class pendulum_bot(object):
         # where state vector = x and dx/dt =~ Ax * Bu
         self.A = np.zeros((4,4))
         self.A[0,1] = 1
-        self.A[2,1] = 0.5
+        self.A[2,1] = 1
         self.A[2,3] = 1
         self.A[3,2] = self.mass * self.g * self.CoM_dist / self.MoI
 
