@@ -26,7 +26,7 @@ class pendulum_bot(object):
 
         self.B = np.zeros((4,1))
         self.B[1] = 1 / (self.mass * self.wheel_rad)
-        self.B[3] = 1 / self.MoI
+        self.B[3] = -1 / self.MoI
 
         # initialize state vector (with provided values if given)
         self.state = initial_state
