@@ -1,2 +1,2 @@
-numpy
-control
+control==0.9.0
+matplotlib==3.4.2
