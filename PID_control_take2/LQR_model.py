@@ -68,8 +68,6 @@ class pendulum_bot(object):
         # S is solution to Riccatti equation
         # E is eigen values of closed loop system
 
-        # reshape K to make dot products work
-        # K = np.array(K).reshape(1,4)
         return K
 
     def update_state(self, dt, u):
@@ -150,6 +148,7 @@ if __name__ == '__main__':
     Q = np.diag([1,1,1,1])
     R = 1e5  # larger = system more inclined to drive motors
     K = testeroni.get_LQR_gains(Q, R)
+    print(K)
     state_des = np.array([1.0,0.,0.,0.]).reshape(4,1)
     states = testeroni.sim_dynamics(K, state_des, timesteps=1000)
     testeroni.plot_states(states)

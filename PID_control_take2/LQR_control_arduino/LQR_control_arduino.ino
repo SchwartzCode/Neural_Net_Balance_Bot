@@ -9,8 +9,6 @@ Adafruit_MPU6050 mpu; //initialize IMU object
 #define maxPWM  255
 #define minPWM  0
 
-#define dt  0.0033 //found empirically, probably a bit off but close enough
-
 // constant used to blend accelerometer & gyroscope angle estimates
 //(1-alpha)*angle_gyro
 #define alpha  0.05 
@@ -20,10 +18,15 @@ Adafruit_MPU6050 mpu; //initialize IMU object
 #define WHEEL_RADIUS   0.033  // [m]
 #define WHEEL_CIRCUMF  0.2073 // [m]
 
+// time step (updated every loop)
+float dt = 0.0033; 
+unsigned long last_time;
+
 byte newEncoderData = 0;
 
-// initialize variables
+// initialize IMU variables
 float angle = 0.0;
+double theta_dot = 0.0;
 
 // encoder variables
 const byte encoder0pinA = 2;//A pin -> the interrupt pin 0
@@ -33,8 +36,13 @@ int duration = 0;//the number of the pulses
 boolean Direction;//the rotation direction
 
 long wheel_pos = 0; // distance travelled by wheel (in encoder ticks)
-long wheel_pos_last = 0; // last position of wheels (for calculating d term)
+long wheel_pos_last = 0; // last position of wheels (for calculating x velocity)
 long desired_pos = TICKS_PER_REV * 0.5 / WHEEL_CIRCUMF; //position in ticks to drive robot to (pos initially in m)
+
+// LQR variables
+float state[4] = {0.0, 0.0, 0.0, 0.0};
+float desired_state[4] = {0.0, 0.0, 0.0, 0.0};
+float LQR_gains[4] = {-0.00316228, -0.05138403, -0.57430165, -0.03902428};  // obtained from python control.LQR function
 
 void setup(void) {
 
@@ -69,6 +77,9 @@ void setup(void) {
   // toggle pins connected to motor controller to output
   pinMode(12, OUTPUT);
   pinMode(13, OUTPUT);
+
+  // intitialize last time so first dt calculation isn't crazy
+  last_time = millis();
 }
 
 /*
@@ -109,7 +120,7 @@ void readEncoder()
 /*
  *  Read accelerometer and gyroscope data from IMU
  */
-void readSensors(double *gyro_x){
+void readSensors(){
   /* Get new sensor events with the readings */
   sensors_event_t a, g, temp;
   mpu.getEvent(&a, &g, &temp);
@@ -118,26 +129,60 @@ void readSensors(double *gyro_x){
   double x_accel = a.acceleration.x - 0.68;
   double y_accel = a.acceleration.y + 0.35;
   double z_accel = a.acceleration.z + 1.78;
-  *gyro_x = g.gyro.x + 0.05;
+  theta_dot = g.gyro.x + 0.05;
 
   // calculate accelerometer & gyroscope angle estimates
   double angle_accel = atan(y_accel / z_accel);
-  double angle_gyro = angle + *gyro_x * dt;
+  double angle_gyro = angle + theta_dot * dt;
 
   // blend two estimates together
   angle = (1 - alpha) * (angle_gyro) + alpha*angle_accel;
+}
 
+/*
+ *   Update state from IMU and encoder readings
+ *        TODO: maybe add some sort of Luenberg observer here? since
+ *              estimate of state can be gotten from last state + last output
+ *    State vector: [x, x_dot, theta, theta_dot]
+ */
+void update_state(){
+  // update time step based on how long last loop took
+  unsigned long curr_time = millis();
+  dt = (curr_time - last_time) / 1000;
+  last_time = curr_time;
+
+  // update state values
+  state[0] = wheel_pos;
+  state[1] = (wheel_pos - wheel_pos_last) / dt;
+  wheel_pos_last = wheel_pos;  // store for next loop
+  state[2] = angle;
+  state[3] = theta_dot;
+}
+
+/*
+ *   Calculate input to the system based on current state and LQR gains K
+ */
+float calculate_LQR_PWM(){
+  float LQR_PWM = 0;
+
+  for(int i=0; i<4; i++){
+    LQR_PWM -= LQR_gains[i] * (state[i] - desired_state[i]);
+  }
+
+  return LQR_PWM;
 }
 
 void loop() {
 
-  double angle = 0;
-  double gyro_x = 0;
+  // update IMU readings
+  readSensors();
 
-  readSensors(&gyro_x);
+  // update state estimate from sensors
+  update_state();
 
+  float LQR_PWM = calculate_LQR_PWM();
   // force positive since analogWrite only takes values in range (0,255)
-  outPWM = abs(LQR_PWM);
+  int outPWM = abs(LQR_PWM);
 
     // clip PWM value at limits of range (0 and 255)
   if (outPWM > maxPWM) {
