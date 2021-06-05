@@ -15,6 +15,10 @@ class pendulum_bot(object):
         self.MoI = 0.00118462 #[kg*m^2]  moment of inertia about wheel axis
         self.friction_coefficient = 0.1 # [unitless] friction from wheel
                                                    # driving on floor
+        # largest torque motor can generate [kgf]
+        # max possible torque is ~0.2kgf.cm (from part specs: https://www.dfrobot.com/product-1457.html)
+        #   1 kgf = 9.81 N, so 0.2kgf.cm = 0.01962 Nm
+        self.max_torque = 0.01962
 
         # linearized state space matrices, derived by hand
         # where state vector = x and dx/dt =~ Ax * Bu
@@ -26,17 +30,19 @@ class pendulum_bot(object):
 
         self.B = np.zeros((4,1))
         self.B[1] = 1 / (self.mass * self.wheel_rad)
-        self.B[3] = -1 / self.MoI
+        self.B[3] = self.wheel_rad * (self.wheel_rad + self.CoM_dist) / self.MoI
 
         # initialize state vector (with provided values if given)
         self.state = initial_state
 
     def state_deriv(self, input):
         # input is torque applied to wheels in [Nm]
-        # max possible torque is ~0.2kgf.cm (from part specs: https://www.dfrobot.com/product-1457.html)
-        #   1 kgf = 9.81 N, so 0.2kgf.cm = 0.01962 Nm
-        if input > 0.01962:
-            input = 0.01962
+        if input > self.max_torque:
+            input =self.max_torque
+        elif input < -self.max_torque:
+            input = -self.max_torque
+
+        print(input)
 
         # calculate derivative of state
         state_dot = self.A @ self.state + self.B * input
@@ -83,7 +89,7 @@ class pendulum_bot(object):
         '''
         self.state += dt*self.state_deriv(u)
 
-    def sim_dynamics(self, K, desired_state, timesteps=100, dt=0.01):
+    def sim_dynamics(self, K, desired_state, timesteps=100, dt=0.04):
         '''
         Simulate robot's dynamics for a set period of time
         Inputs:
@@ -139,16 +145,15 @@ class pendulum_bot(object):
         plt.show()
 
 
-
 # ===========================================================
 # driver script
 if __name__ == '__main__':
-    testeroni = pendulum_bot(initial_state=np.array([0.,0.01,0.,0.]).reshape(4,1))
+    testeroni = pendulum_bot(initial_state=np.array([0.,0.,0.01,0.]).reshape(4,1))
     # define controller parameters and obtain gains matrix
-    Q = np.diag([1,1,1,1])
-    R = 1e5  # larger = system more inclined to drive motors
+    Q = np.diag([1,1,1,0.1])
+    R = 1e3  # larger = system more inclined to drive motors
     K = testeroni.get_LQR_gains(Q, R)
     print(K)
-    state_des = np.array([1.0,0.,0.,0.]).reshape(4,1)
-    states = testeroni.sim_dynamics(K, state_des, timesteps=1000)
+    state_des = np.array([0.0,0.,0.,0.]).reshape(4,1)
+    states = testeroni.sim_dynamics(K, state_des, timesteps=100)
     testeroni.plot_states(states)

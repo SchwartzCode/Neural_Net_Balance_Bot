@@ -18,16 +18,17 @@ Adafruit_MPU6050 mpu; //initialize IMU object
 #define WHEEL_RADIUS   0.033  // [m]
 #define WHEEL_CIRCUMF  0.2073 // [m]
 
-#define MAX_TORQUE  0.01962  // [Nm]
+#define MAX_TORQUE  0.02  // [Nm]
 
 // time step (updated every loop)
-float dt = 0.0033; 
+double dt = 0.0033; 
 unsigned long last_time;
 
 byte newEncoderData = 0;
 
 // initialize IMU variables
-float angle = 0.0;
+double angle = 0.0;
+double angle_last = 0.0;
 double theta_dot = 0.0;
 
 // encoder variables
@@ -42,9 +43,9 @@ long wheel_pos_last = 0; // last position of wheels (for calculating x velocity)
 long desired_pos = TICKS_PER_REV * 0.5 / WHEEL_CIRCUMF; //position in ticks to drive robot to (pos initially in m)
 
 // LQR variables
-float state[4] = {0.0, 0.0, 0.0, 0.0};
-float desired_state[4] = {0.0, 0.0, 0.0, 0.0};
-float LQR_gains[4] = {-0.00316228, -0.05138403, -0.57430165, -0.03902428};  // obtained from python control.LQR function
+double state[4] = {0.0, 0.0, 0.0, 0.0};
+double desired_state[4] = {0.0, 0.0, 0.0, 0.0};
+double LQR_gains[4] = {-0.00316228, 0.558043270, 8.42167772, 0.570391529};  // obtained from python control.LQR function
 
 void setup(void) {
 
@@ -157,22 +158,31 @@ void update_state(){
   state[0] = WHEEL_CIRCUMF * wheel_pos / TICKS_PER_REV;
   state[1] = WHEEL_CIRCUMF * (wheel_pos - wheel_pos_last) / (dt * TICKS_PER_REV);
   wheel_pos_last = wheel_pos;  // store for next loop
-  state[2] = -angle;  // may need to offset angle because balance is a bit off
-  state[3] = theta_dot;
+  state[2] = angle;  // may need to offset angle because balance is a bit off
+  state[3] = theta_dot * 3.14/180; // convert from degrees to radians
 }
 
 /*
  *   Calculate input to the system based on current state and LQR gains K
  */
-float calculate_LQR_PWM(){
-  float LQR_PWM = 0;
+double calculate_LQR_PWM(){
+  double LQR_PWM = 0.0;
   
   for(int i=0; i<4; i++){
     LQR_PWM -= LQR_gains[i] * (state[i] - desired_state[i]);
   }
 
-  
-  return float(maxPWM) * LQR_PWM / MAX_TORQUE;
+  LQR_PWM = double(maxPWM) * LQR_PWM / MAX_TORQUE;
+
+  // bound to possible range for inputs to analogWrite [0,255]
+  //    note that abs(LQR_PWM) happens in loop()
+  if(LQR_PWM > 255.0){
+    LQR_PWM = 255.0;
+  } else if (LQR_PWM < -255.0){
+    LQR_PWM = -255.0;
+  }
+
+  return LQR_PWM;
 }
 
 void loop() {
@@ -183,21 +193,9 @@ void loop() {
   // update state estimate from sensors
   update_state();
 
-  float LQR_PWM = calculate_LQR_PWM();
+  double LQR_PWM = calculate_LQR_PWM();
   // force positive since analogWrite only takes values in range (0,255)
-  int outPWM = abs(LQR_PWM);
-
-    // clip PWM value at limits of range (0 and 255)
-  if (outPWM > maxPWM) {
-    outPWM = maxPWM;
-  } else if (outPWM < minPWM) {
-     outPWM = minPWM;
-  } else {
-    // no clipping needed, must cast to int though (analogWrite() takes ints)
-    outPWM = (int) abs(LQR_PWM);
-  }
-
-  Serial.println(LQR_PWM);
+  int outPWM = (int) abs(LQR_PWM);
 
    if(LQR_PWM > 0) {
       // we want wheels to move backward
