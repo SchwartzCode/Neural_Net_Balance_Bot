@@ -152,8 +152,8 @@ void update_state(){
   last_time = curr_time;
 
   // update state values
-  state[0] = wheel_pos;
-  state[1] = (wheel_pos - wheel_pos_last) / dt;
+  state[0] = WHEEL_CIRCUMF * wheel_pos / TICKS_PER_REV;
+  state[1] = WHEEL_CIRCUMF * (wheel_pos - wheel_pos_last) / (dt * TICKS_PER_REV);
   wheel_pos_last = wheel_pos;  // store for next loop
   state[2] = angle;
   state[3] = theta_dot;
