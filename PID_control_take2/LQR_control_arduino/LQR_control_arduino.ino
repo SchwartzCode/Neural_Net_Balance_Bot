@@ -18,6 +18,8 @@ Adafruit_MPU6050 mpu; //initialize IMU object
 #define WHEEL_RADIUS   0.033  // [m]
 #define WHEEL_CIRCUMF  0.2073 // [m]
 
+#define MAX_TORQUE  0.01962  // [Nm]
+
 // time step (updated every loop)
 float dt = 0.0033; 
 unsigned long last_time;
@@ -132,8 +134,8 @@ void readSensors(){
   theta_dot = g.gyro.x + 0.05;
 
   // calculate accelerometer & gyroscope angle estimates
-  double angle_accel = atan(y_accel / z_accel);
-  double angle_gyro = angle + theta_dot * dt;
+  double angle_accel = -atan(y_accel / z_accel);
+  double angle_gyro = angle - theta_dot * dt;
 
   // blend two estimates together
   angle = (1 - alpha) * (angle_gyro) + alpha*angle_accel;
@@ -148,14 +150,14 @@ void readSensors(){
 void update_state(){
   // update time step based on how long last loop took
   unsigned long curr_time = millis();
-  dt = (curr_time - last_time) / 1000;
+  dt = (curr_time - last_time) / 1000.0;
   last_time = curr_time;
 
   // update state values
   state[0] = WHEEL_CIRCUMF * wheel_pos / TICKS_PER_REV;
   state[1] = WHEEL_CIRCUMF * (wheel_pos - wheel_pos_last) / (dt * TICKS_PER_REV);
   wheel_pos_last = wheel_pos;  // store for next loop
-  state[2] = angle;
+  state[2] = -angle;  // may need to offset angle because balance is a bit off
   state[3] = theta_dot;
 }
 
@@ -164,12 +166,13 @@ void update_state(){
  */
 float calculate_LQR_PWM(){
   float LQR_PWM = 0;
-
+  
   for(int i=0; i<4; i++){
     LQR_PWM -= LQR_gains[i] * (state[i] - desired_state[i]);
   }
 
-  return LQR_PWM;
+  
+  return float(maxPWM) * LQR_PWM / MAX_TORQUE;
 }
 
 void loop() {
@@ -193,6 +196,8 @@ void loop() {
     // no clipping needed, must cast to int though (analogWrite() takes ints)
     outPWM = (int) abs(LQR_PWM);
   }
+
+  Serial.println(LQR_PWM);
 
    if(LQR_PWM > 0) {
       // we want wheels to move backward
