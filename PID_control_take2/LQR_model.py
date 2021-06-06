@@ -18,7 +18,8 @@ class pendulum_bot(object):
         # largest torque motor can generate [kgf]
         # max possible torque is ~0.2kgf.cm (from part specs: https://www.dfrobot.com/product-1457.html)
         #   1 kgf = 9.81 N, so 0.2kgf.cm = 0.01962 Nm
-        self.max_torque = 0.01962
+        # also there are 2 motors so double that
+        self.max_torque = 2 * 0.01962
 
         # linearized state space matrices, derived by hand
         # where state vector = x and dx/dt =~ Ax * Bu
@@ -30,7 +31,7 @@ class pendulum_bot(object):
 
         self.B = np.zeros((4,1))
         self.B[1] = 1 / (self.mass * self.wheel_rad)
-        self.B[3] = self.wheel_rad * (self.wheel_rad + self.CoM_dist) / self.MoI
+        self.B[3] = 1 / self.MoI
 
         # initialize state vector (with provided values if given)
         self.state = initial_state
@@ -41,8 +42,6 @@ class pendulum_bot(object):
             input =self.max_torque
         elif input < -self.max_torque:
             input = -self.max_torque
-
-        print(input)
 
         # calculate derivative of state
         state_dot = self.A @ self.state + self.B * input
@@ -151,7 +150,7 @@ if __name__ == '__main__':
     testeroni = pendulum_bot(initial_state=np.array([0.,0.,0.01,0.]).reshape(4,1))
     # define controller parameters and obtain gains matrix
     Q = np.diag([1,1,1,0.1])
-    R = 1e3  # larger = system more inclined to drive motors
+    R = 1e5  # larger = system less inclined to drive motors
     K = testeroni.get_LQR_gains(Q, R)
     print(K)
     state_des = np.array([0.0,0.,0.,0.]).reshape(4,1)

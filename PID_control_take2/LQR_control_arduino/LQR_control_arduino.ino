@@ -18,7 +18,7 @@ Adafruit_MPU6050 mpu; //initialize IMU object
 #define WHEEL_RADIUS   0.033  // [m]
 #define WHEEL_CIRCUMF  0.2073 // [m]
 
-#define MAX_TORQUE  0.02  // [Nm]
+#define MAX_TORQUE  0.11  // [Nm]
 
 // time step (updated every loop)
 double dt = 0.0033; 
@@ -45,7 +45,7 @@ long desired_pos = TICKS_PER_REV * 0.5 / WHEEL_CIRCUMF; //position in ticks to d
 // LQR variables
 double state[4] = {0.0, 0.0, 0.0, 0.0};
 double desired_state[4] = {0.0, 0.0, 0.0, 0.0};
-double LQR_gains[4] = {-0.00316228, 0.558043270, 8.42167772, 0.570391529};  // obtained from python control.LQR function
+double LQR_gains[4] = {-0.03162278, -0.01246838, 0.5726957, 0.03999879};  // obtained from python control.LQR function
 
 void setup(void) {
 
@@ -116,8 +116,8 @@ void readEncoder()
   }
   encoder0PinALast = Lstate;
 
-  if(!Direction)  wheel_pos++;
-  else  wheel_pos--;
+  if(!Direction)  wheel_pos--;
+  else  wheel_pos++;
 }
 
 /*

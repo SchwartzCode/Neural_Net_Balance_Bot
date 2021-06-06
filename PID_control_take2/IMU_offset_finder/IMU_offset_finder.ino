@@ -145,8 +145,8 @@ void loop() {
     mpu.getEvent(&a, &g, &temp);
 
     // update sensor readings
-    x_accel += a.acceleration.x - 0.68;
-    y_accel += a.acceleration.y + 0.35;
+    x_accel += a.acceleration.x - 0.74;
+    y_accel += a.acceleration.y + 0.47;
     z_accel += a.acceleration.z +1.78;
     gyro_x += g.gyro.x + 0.05;
   }
