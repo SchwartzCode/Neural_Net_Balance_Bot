@@ -11,14 +11,14 @@ Adafruit_MPU6050 mpu; //initialize IMU object
 
 // constant used to blend accelerometer & gyroscope angle estimates
 //(1-alpha)*angle_gyro
-#define alpha  0.05 
+#define alpha  0.004
 
 // constants for calculating distance travelled from encoder ticks
 #define TICKS_PER_REV  1920
 #define WHEEL_RADIUS   0.033  // [m]
 #define WHEEL_CIRCUMF  0.2073 // [m]
 
-#define MAX_TORQUE  0.11  // [Nm]
+#define MAX_TORQUE  0.075   // [Nm]
 
 // time step (updated every loop)
 double dt = 0.0033; 
@@ -45,7 +45,7 @@ long desired_pos = TICKS_PER_REV * 0.5 / WHEEL_CIRCUMF; //position in ticks to d
 // LQR variables
 double state[4] = {0.0, 0.0, 0.0, 0.0};
 double desired_state[4] = {0.0, 0.0, 0.0, 0.0};
-double LQR_gains[4] = {-0.03162278, -0.01246838, 0.5726957, 0.03999879};  // obtained from python control.LQR function
+double LQR_gains[4] = {0.0, 0.0, 0.51538, 0.0471};  // obtained from python control.LQR function
 
 void setup(void) {
 
@@ -187,6 +187,8 @@ double calculate_LQR_PWM(){
 
 void loop() {
 
+  Serial.println(angle);
+
   // update IMU readings
   readSensors();
 
@@ -196,7 +198,7 @@ void loop() {
   double LQR_PWM = calculate_LQR_PWM();
   // force positive since analogWrite only takes values in range (0,255)
   int outPWM = (int) abs(LQR_PWM);
-
+  
    if(LQR_PWM > 0) {
       // we want wheels to move backward
       digitalWrite(12, LOW);

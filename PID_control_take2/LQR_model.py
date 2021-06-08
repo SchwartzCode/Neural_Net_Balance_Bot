@@ -27,11 +27,11 @@ class pendulum_bot(object):
         self.A[0,1] = 1
         self.A[2,1] = 1
         self.A[2,3] = 1
-        self.A[3,2] = self.mass * self.g * self.CoM_dist / self.MoI
+        self.A[3,2] = self.g / self.CoM_dist
 
         self.B = np.zeros((4,1))
         self.B[1] = 1 / (self.mass * self.wheel_rad)
-        self.B[3] = 1 / self.MoI
+        self.B[3] = 1 / (self.mass * self.CoM_dist**2)
 
         # initialize state vector (with provided values if given)
         self.state = initial_state
@@ -147,12 +147,12 @@ class pendulum_bot(object):
 # ===========================================================
 # driver script
 if __name__ == '__main__':
-    testeroni = pendulum_bot(initial_state=np.array([0.,0.,0.01,0.]).reshape(4,1))
+    testeroni = pendulum_bot(initial_state=np.array([0.,0.,0.,0.]).reshape(4,1))
     # define controller parameters and obtain gains matrix
-    Q = np.diag([1,1,1,0.1])
+    Q = np.diag([1,1,1,100])
     R = 1e5  # larger = system less inclined to drive motors
     K = testeroni.get_LQR_gains(Q, R)
     print(K)
-    state_des = np.array([0.0,0.,0.,0.]).reshape(4,1)
-    states = testeroni.sim_dynamics(K, state_des, timesteps=100)
-    testeroni.plot_states(states)
+    # state_des = np.array([0.0,0.,0.,0.]).reshape(4,1)
+    # states = testeroni.sim_dynamics(K, state_des, timesteps=100)
+    # testeroni.plot_states(states)
