@@ -88,6 +88,7 @@ class pendulum_bot(object):
         '''
         self.state += dt*self.state_deriv(u)
 
+
     def sim_dynamics(self, K, desired_state, timesteps=100, dt=0.04):
         '''
         Simulate robot's dynamics for a set period of time
@@ -109,7 +110,10 @@ class pendulum_bot(object):
         states = self.state
 
         for i in range(timesteps):
-            u = -K @ (self.state - desired_state)
+            u = -K @ ( self.state - desired_state )
+            # u += K @ np.array([0., 0., 0.05, 0.])
+            # u *= (0.18*2) / 0.75
+            # u *= 0.7
             self.update_state(dt, u)
             states = np.hstack([states, self.state])
 
@@ -147,12 +151,12 @@ class pendulum_bot(object):
 # ===========================================================
 # driver script
 if __name__ == '__main__':
-    testeroni = pendulum_bot(initial_state=np.array([0.,0.,0.,0.]).reshape(4,1))
+    testeroni = pendulum_bot(initial_state=np.array([0.,0.,0.03,0.]).reshape(4,1))
     # define controller parameters and obtain gains matrix
-    Q = np.diag([1,1,1,100])
+    Q = np.diag([1,1,1,1])
     R = 1e5  # larger = system less inclined to drive motors
     K = testeroni.get_LQR_gains(Q, R)
     print(K)
-    # state_des = np.array([0.0,0.,0.,0.]).reshape(4,1)
-    # states = testeroni.sim_dynamics(K, state_des, timesteps=100)
-    # testeroni.plot_states(states)
+    state_des = np.array([0.0,0.,0.,0.]).reshape(4,1)
+    states = testeroni.sim_dynamics(K, state_des, timesteps=100)
+    testeroni.plot_states(states)

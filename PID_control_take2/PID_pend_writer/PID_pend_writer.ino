@@ -238,12 +238,4 @@ void loop() {
     I_error = 0;
   }
 
-//  Serial.println("~~~~~~~~~~~~~");
-//  Serial.println(PID_PWM);
-//  Serial.println(PWM_attitude);
-//  Serial.println(PWM_position);
-//  Serial.println(wheel_pos);
-//  Serial.println(desired_pos);
-//  Serial.println("\n");
-
 }

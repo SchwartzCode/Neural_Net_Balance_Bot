@@ -11,14 +11,14 @@ Adafruit_MPU6050 mpu; //initialize IMU object
 
 // constant used to blend accelerometer & gyroscope angle estimates
 //(1-alpha)*angle_gyro
-#define alpha  0.004
+#define alpha  0.003
 
 // constants for calculating distance travelled from encoder ticks
 #define TICKS_PER_REV  1920
 #define WHEEL_RADIUS   0.033  // [m]
 #define WHEEL_CIRCUMF  0.2073 // [m]
 
-#define MAX_TORQUE  0.075   // [Nm]
+#define MAX_TORQUE  0.08 // [Nm]
 
 // time step (updated every loop)
 double dt = 0.0033; 
@@ -44,8 +44,8 @@ long desired_pos = TICKS_PER_REV * 0.5 / WHEEL_CIRCUMF; //position in ticks to d
 
 // LQR variables
 double state[4] = {0.0, 0.0, 0.0, 0.0};
-double desired_state[4] = {0.0, 0.0, 0.0, 0.0};
-double LQR_gains[4] = {0.0, 0.0, 0.51538, 0.0471};  // obtained from python control.LQR function
+double desired_state[4] = {0.5, 0.0, 0.0, 0.0};
+double LQR_gains[4] = {-0.00316228, 0.02213903, 0.51538, 0.03447958};  // obtained from python control.LQR function
 
 void setup(void) {
 
