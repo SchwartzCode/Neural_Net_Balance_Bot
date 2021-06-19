@@ -45,6 +45,11 @@ def compute_loss_and_acc(y_actual, y_predicted, acceptable_diff=25):
 
     loss = np.sum( (y_actual - y_predicted)**2 ) / y_actual.shape[0] # MSE loss
 
-    acc = np.sum( (np.abs(y_actual - y_predicted) < acceptable_diff).astype(np.int) ) / y_actual.shape[0]
+    if len(y_actual.shape) == 1:
+        acc = np.sum( (np.abs(y_actual - y_predicted) < acceptable_diff).astype(np.int) ) / y_actual.shape[0]
+    else:
+        # assume 2 outputs for PID case [PWM, angle]
+        acc = np.sum( (np.abs(y_actual[:,0] - y_predicted[:,0]) < acceptable_diff).astype(np.int) ) / y_actual.shape[0]
+
 
     return loss, acc
