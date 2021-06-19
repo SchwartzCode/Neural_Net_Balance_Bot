@@ -116,7 +116,6 @@ void readSensors(double *gyro_x){
   mpu.getEvent(&a, &g, &temp);
 
   // correct for IMU offsets (determined experimentally)
-  double x_accel = a.acceleration.x - 0.69;
   double y_accel = a.acceleration.y + 0.41;
   double z_accel = a.acceleration.z +  1.76;
   *gyro_x += g.gyro.x + 0.05;

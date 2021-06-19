@@ -24,12 +24,12 @@ device = torch.device("cuda" if use_cuda else "cpu")
 # generate training & validation data
 train_in = np.random.rand(10000)
 train_in = train_in * np.pi/2 - 0.5 * np.pi/2
-train_out = np.tan(train_in)
+train_out = np.arctan(train_in)
 
 valid_in = np.random.rand(500)
 valid_in = valid_in * np.pi/2 - 0.5 * np.pi/2
 valid_in.sort()
-valid_out = np.tan(valid_in)
+valid_out = np.arctan(valid_in)
 
 # HYPER-PARAMETERS
 batch_size = 250
