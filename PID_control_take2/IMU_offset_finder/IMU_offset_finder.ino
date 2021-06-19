@@ -133,10 +133,10 @@ void loop() {
   unsigned long elapsedTime = currTime - lastTime; 
 
   // correct for IMU offsets (determined experimentally)
-  double z_accel = 0.0; //a.acceleration.z + 1.6;
-  double y_accel = 0.0; //a.acceleration.y + 0.5;
-  double x_accel = 0.0; //a.acceleration.x - 0.67;
-  double gyro_x = 0.0; //g.gyro.x + 0.05;
+  double z_accel = 0.0; 
+  double y_accel = 0.0; 
+  double x_accel = 0.0; 
+  double gyro_x = 0.0;
 
   for(int i=0; i<100; i++){
       
@@ -145,9 +145,9 @@ void loop() {
     mpu.getEvent(&a, &g, &temp);
 
     // update sensor readings
-    x_accel += a.acceleration.x - 0.74;
-    y_accel += a.acceleration.y + 0.47;
-    z_accel += a.acceleration.z +1.78;
+    x_accel += a.acceleration.x - 0.69;
+    y_accel += a.acceleration.y + 0.41;
+    z_accel += a.acceleration.z +  1.76;
     gyro_x += g.gyro.x + 0.05;
   }
 

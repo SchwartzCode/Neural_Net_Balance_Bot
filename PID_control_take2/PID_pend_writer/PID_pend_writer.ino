@@ -24,7 +24,7 @@ byte newEncoderData = 0;
 
 // initialize variables
 float angle = 0.0;
-float I_error = 0.0;
+int last_output = 0;
 
 // encoder variables
 const byte encoder0pinA = 2;//A pin -> the interrupt pin 0
@@ -35,7 +35,7 @@ boolean Direction;//the rotation direction
 
 long wheel_pos = 0; // distance travelled by wheel (in encoder ticks)
 long wheel_pos_last = 0; // last position of wheels (for calculating d term)
-long desired_pos = TICKS_PER_REV * 0.5 / WHEEL_CIRCUMF; //position in ticks to drive robot to (pos initially in m)
+long desired_pos = TICKS_PER_REV * 0.0 / WHEEL_CIRCUMF; //position in ticks to drive robot to (pos initially in m)
 
 void setup(void) {
 
@@ -66,9 +66,6 @@ void setup(void) {
   mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);   // options:  260, 184, 94, 44, 21, 10, 5 [Hz]
   Serial.println("");
   delay(100);
-
-  // what information we'll be printing out (for training neural network)
-//  Serial.println("y_accel | z_accel | gyro_x | I_error | PID_PWM");
 
   // toggle pins connected to motor controller to output
   pinMode(12, OUTPUT);
@@ -119,10 +116,10 @@ void readSensors(double *gyro_x){
   mpu.getEvent(&a, &g, &temp);
 
   // correct for IMU offsets (determined experimentally)
-  double x_accel = a.acceleration.x - 0.68;
-  double y_accel = a.acceleration.y + 0.35;
-  double z_accel = a.acceleration.z + 1.78;
-  *gyro_x = g.gyro.x + 0.05;
+  double x_accel = a.acceleration.x - 0.69;
+  double y_accel = a.acceleration.y + 0.41;
+  double z_accel = a.acceleration.z +  1.76;
+  *gyro_x += g.gyro.x + 0.05;
 
   // calculate accelerometer & gyroscope angle estimates
   double angle_accel = atan(y_accel / z_accel);
@@ -139,40 +136,49 @@ void readSensors(double *gyro_x){
 float attitude_PID(float *PID_PWM, const float gyro_x){
   // determine error terms using IMU readings
   float D_error = -gyro_x;
-  float error = -angle;
-  I_error += error*dt;
+  float error = -(angle-0.03);
 
   // determine P, I, and D terms using errors and gains
   float P = -3000 * error;
-  float I = -1250 * I_error;
+  float I = 0 * last_output;
   float D = -300 * D_error;
 
   // sum P I D terms to get desired PWM output to motors
   *PID_PWM = P + I + D; //apply positional PID here
 
-//  Serial.println("==========");
-//  Serial.println(P);
-//  Serial.println(I);
-//  Serial.println(D);
-
   return D_error;
+}
+
+// get sign of a number
+template <typename T> int sgn(T val) {
+    return (T(0) < val) - (val < T(0));
 }
 
 /*
  * Calculate desired PWM for position PID
  */
- void position_PID(float *PID_PWM){
-  float P = -(desired_pos - wheel_pos) / 10;
-  float D = (wheel_pos - wheel_pos_last) / (dt * 10);
-  
-  if(D > 15.0){
-    *PID_PWM = P + D;
-  } else {
-    *PID_PWM = P;
+ void position_PID(float *POS_PWM){
+  float P = (desired_pos - wheel_pos);
+  float D = 0;
+  // only drive toward position if over 500 ticks away (~5 cm)
+  if (abs(P) > 250){
+    float wheel_vel = (wheel_pos - wheel_pos_last) / dt;
+    D = -(500 * sgn(P) - wheel_vel);
   }
-  
-  clamp_pos_PWM(PID_PWM);
 
+  /* 
+   *  - make D term larger in gain (looks like it might be already?)
+   *  - if pos off by >100 (or something like that) make des vel 0.1 m/s or something
+   *     - right now tries to keep vel close to 0 which isn't good
+   *     - maybe ditch P term all together?
+   */
+  
+  *POS_PWM = D;
+
+  clamp_pos_PWM(POS_PWM);
+
+  Serial.println(D);
+  
   wheel_pos_last = wheel_pos;
  }
 
@@ -203,8 +209,7 @@ void loop() {
   float D_error = attitude_PID(&PWM_attitude, gyro_x);
   position_PID(&PWM_position);
 
-//  PID_PWM = 0.75*PWM_attitude + 0.25*PWM_position;
-  PID_PWM = PWM_attitude - 75 + PWM_position; // offset corrects for robot being slightly off-balance (will vary between bots)
+  PID_PWM = PWM_attitude + PWM_position; // offset corrects for robot being slightly off-balance (will vary between bots)
 
   // force positive since analogWrite only takes values in range (0,255)
   outPWM = abs(PID_PWM);
@@ -231,11 +236,7 @@ void loop() {
     // write PWM duty cycle to motors
     analogWrite(3, outPWM);
     analogWrite(11, outPWM);
-
-  // reset I term when angular vel is low to prevent windup
-  //    note: didn't include error because it's alright if angle is a bit off (esp. when trying to move to different translational position)
-  if (abs(D_error) < 0.1) {
-    I_error = 0;
-  }
+  
+  last_output = outPWM;
 
 }

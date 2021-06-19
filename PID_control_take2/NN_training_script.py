@@ -82,9 +82,6 @@ network = nn.Sequential(
 ).double()
 
 
-
-
-
 # HYPER-PARAMETERS
 batch_size = 50
 learning_rate = 3e-3
