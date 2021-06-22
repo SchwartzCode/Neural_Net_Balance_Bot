@@ -48,7 +48,6 @@ network = nn.Sequential(
     nn.Linear(4, 1)
 ).double()
 
-
 optimizer = torch.optim.Adam(network.parameters(), lr=learning_rate)
 training_loss = np.zeros(max_iters)
 training_acc = np.zeros(max_iters)
