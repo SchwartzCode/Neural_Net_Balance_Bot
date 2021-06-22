@@ -38,12 +38,21 @@ class data_generator(object):
         inputs = np.vstack([last_angle_vals, y_accel_vals, z_accel_vals,
                             x_gyro_vals, encoder_vals, last_encoder_vals]).T
 
-        outputs = []
-        for datum in inputs:
-            output = self.calculate_PID_output(datum)
-            outputs.append([output, self.angle])
+        angle_inputs = np.vstack([last_angle_vals, y_accel_vals, z_accel_vals,
+                                  x_gyro_vals]).T
 
-        return inputs, np.asarray(outputs)
+        # 0 will be replaced by angle prediction output from angle network
+        controller_inputs = np.vstack([np.zeros(num_points), encoder_vals, last_encoder_vals]).T
+
+        outputs = []
+        angles = []
+        for i, datum in enumerate(inputs):
+            angles.append(self.angle)
+            output = self.calculate_PID_output(datum)
+            # outputs.append(output)
+            outputs.append(output)
+
+        return angle_inputs, controller_inputs, np.asarray(angles), np.asarray(outputs)
 
 
     def calculate_PID_output(self, input):

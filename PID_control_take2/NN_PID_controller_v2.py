@@ -24,25 +24,28 @@ device = torch.device("cuda" if use_cuda else "cpu")
 
 # generate training & validation data
 PID_data_gen = data_generator()
-train_in, train_out = PID_data_gen.gen_PID_data(num_points=10000)
-valid_in, valid_out = PID_data_gen.gen_PID_data(num_points=1000)
+angle_train_in, train_in, angle_train_out, train_out \
+    = PID_data_gen.gen_PID_data(num_points=10000)
+angle_valid_in, valid_in, angle_valid_out, valid_out \
+    = PID_data_gen.gen_PID_data(num_points=1000)
 
 # HYPER-PARAMETERS
 batch_size = 250
-learning_rate = 75e-4
-max_iters = 250
+learning_rate = 1e-3
+max_iters = 200
 # initialize arrays, split data into batches, prepare torch Optimizer
-batches = get_random_batches(train_in,train_out,batch_size)
-batch_num = len(batches)
+angle_batches = get_random_batches(angle_train_in,angle_train_out,batch_size)
+batch_num = len(angle_batches)
 epoch = max_iters
 log_interval = 5
 
 # define network structure
 network = nn.Sequential(
-    nn.Linear(6, 10),
+    nn.Linear(4, 20),
     nn.PReLU(),
-    nn.Linear(10, 2),
-    nn.PReLU()
+    nn.Linear(20, 4),
+    nn.PReLU(),
+    nn.Linear(4, 1)
 ).double()
 
 optimizer = torch.optim.Adam(network.parameters(), lr=learning_rate)
@@ -54,7 +57,7 @@ training_acc = np.zeros(max_iters)
 for ep in range(epoch):
     total_loss = 0
     counter = 0
-    for xb,yb in batches:
+    for xb,yb in angle_batches:
         xb = torch.tensor(xb)
         # xb = torch.reshape(xb, (len(xb),1))
 
@@ -68,7 +71,7 @@ for ep in range(epoch):
         total_loss += loss.item()
 
         loss_calc, acc = compute_loss_and_acc(yb_numpy, y_pred.detach().numpy(),
-                                acceptable_diff=25)
+                                acceptable_diff=0.05)
         training_acc[ep] += acc / batch_num
 
         optimizer.zero_grad()
@@ -87,15 +90,27 @@ plt.ylabel("Training accuracy")
 plt.show()
 
 # estimate outputs for validation dataset
-y_est = network(torch.tensor(valid_in))
+y_est = network(torch.tensor(angle_valid_in))
 y_est = y_est.detach().numpy()
 
-min_val = max(np.min(valid_out[:,0]), np.min(y_est[:,0]))
-max_val = min(np.max(valid_out[:,0]), np.max(y_est[:,0]))
+# min_val = max(np.min(valid_out), np.min(y_est))
+# max_val = min(np.max(valid_out), np.max(y_est))
+#
+# plt.scatter(valid_out, y_est)
+# plt.plot([min_val, max_val], [min_val, max_val], color='navajowhite', label='Ideal')
+# plt.xlabel("Actual PWM Output")
+# plt.ylabel("NN PWM Estimate")
+# plt.legend()
+# plt.show()
 
-plt.scatter(valid_out[:,0], y_est[:,0])
+# plotting angle estimates vs actual
+min_val = max(np.min(angle_valid_out), np.min(y_est))
+max_val = min(np.max(angle_valid_out), np.max(y_est))
+
+plt.scatter(angle_valid_out, y_est)
 plt.plot([min_val, max_val], [min_val, max_val], color='navajowhite', label='Ideal')
 plt.xlabel("Actual PWM Output")
 plt.ylabel("NN PWM Estimate")
+plt.title("Angle output")
 plt.legend()
 plt.show()
