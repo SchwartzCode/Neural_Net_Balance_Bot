@@ -47,9 +47,9 @@ class data_generator(object):
         outputs = []
         angles = []
         for i, datum in enumerate(inputs):
-            angles.append(self.angle)
             output = self.calculate_PID_output(datum)
             # outputs.append(output)
+            angles.append(self.angle)
             outputs.append(output)
 
         return angle_inputs, controller_inputs, np.asarray(angles), np.asarray(outputs)

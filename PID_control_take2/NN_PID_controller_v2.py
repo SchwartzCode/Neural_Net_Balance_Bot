@@ -25,27 +25,25 @@ device = torch.device("cuda" if use_cuda else "cpu")
 # generate training & validation data
 PID_data_gen = data_generator()
 angle_train_in, train_in, angle_train_out, train_out \
-    = PID_data_gen.gen_PID_data(num_points=10000)
+    = PID_data_gen.gen_PID_data(num_points=20000)
 angle_valid_in, valid_in, angle_valid_out, valid_out \
     = PID_data_gen.gen_PID_data(num_points=1000)
 
 # HYPER-PARAMETERS
-batch_size = 250
-learning_rate = 1e-3
-max_iters = 200
+batch_size = 1000
+learning_rate = 5e-3
+max_iters = 1500
 # initialize arrays, split data into batches, prepare torch Optimizer
-angle_batches = get_random_batches(angle_train_in,angle_train_out,batch_size)
+angle_batches = get_random_batches(angle_train_in, angle_train_out, batch_size)
 batch_num = len(angle_batches)
 epoch = max_iters
 log_interval = 5
 
 # define network structure
 network = nn.Sequential(
-    nn.Linear(4, 20),
-    nn.PReLU(),
-    nn.Linear(20, 4),
-    nn.PReLU(),
-    nn.Linear(4, 1)
+    nn.Linear(4, 10),
+    nn.ReLU(),
+    nn.Linear(10, 1)
 ).double()
 
 
@@ -53,41 +51,46 @@ optimizer = torch.optim.Adam(network.parameters(), lr=learning_rate)
 training_loss = np.zeros(max_iters)
 training_acc = np.zeros(max_iters)
 
-
 # time to train
 for ep in range(epoch):
     total_loss = 0
     counter = 0
     for xb,yb in angle_batches:
-        xb = torch.tensor(xb)
-        # xb = torch.reshape(xb, (len(xb),1))
+    # for i in range(angle_train_out.size):
+    #     xb = angle_train_in[i]
+    #     yb = np.array([ angle_train_out[i] ])
 
+        xb = torch.tensor(xb)
+        # xb = torch.reshape(xb, (len(xb),1
         yb_numpy = yb.copy()
         yb = torch.tensor(yb)
 
-        y_pred = network(xb)
+        y_pred = torch.flatten(network(xb))
+
 
         # loss = F.binary_cross_entropy(y_pred, yb)
         loss = F.mse_loss(y_pred, yb)
         total_loss += loss.item()
 
         loss_calc, acc = compute_loss_and_acc(yb_numpy, y_pred.detach().numpy(),
-                                acceptable_diff=0.05)
+                                acceptable_diff=0.01)
         training_acc[ep] += acc / batch_num
 
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
 
-    print(ep, 'Loss:', total_loss)
-    print('\tAcc:', training_acc[ep])
+    if ep % 10 == 0:
+        print(ep, 'Loss:', total_loss)
+        print('\tAcc:', training_acc[ep])
     training_loss[ep] = total_loss
 
 print("Done training")
 
-plt.plot(np.arange(0,epoch), training_acc)
+plt.plot(np.arange(0,epoch), training_loss)
 plt.xlabel("Epoch")
-plt.ylabel("Training accuracy")
+plt.ylabel("Training loss")
+plt.ylim(0.0, 0.1)
 plt.show()
 
 # estimate outputs for validation dataset
@@ -110,8 +113,8 @@ max_val = min(np.max(angle_valid_out), np.max(y_est))
 
 plt.scatter(angle_valid_out, y_est)
 plt.plot([min_val, max_val], [min_val, max_val], color='navajowhite', label='Ideal')
-plt.xlabel("Actual PWM Output")
-plt.ylabel("NN PWM Estimate")
+plt.xlabel("Actual Angle")
+plt.ylabel("NN Angle Estimate")
 plt.title("Angle output")
 plt.legend()
 plt.show()
