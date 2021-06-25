@@ -19,6 +19,7 @@ use_cuda = torch.cuda.is_available()
 #   note: it's fine that the front 32 bits will all be zeros, although could be good
 #         to try expanding random seeds to fill all 64 bits
 seed = np.uint64( random.randint(0,2147483647) )
+# seed = np.uint64(1810914062)
 torch.manual_seed(seed)
 device = torch.device("cuda" if use_cuda else "cpu")
 
@@ -32,7 +33,7 @@ angle_valid_in, valid_in, angle_valid_out, valid_out \
 # HYPER-PARAMETERS
 batch_size = 1000
 learning_rate = 5e-3
-max_iters = 1500
+max_iters = 400
 # initialize arrays, split data into batches, prepare torch Optimizer
 angle_batches = get_random_batches(angle_train_in, angle_train_out, batch_size)
 batch_num = len(angle_batches)
@@ -41,9 +42,9 @@ log_interval = 5
 
 # define network structure
 network = nn.Sequential(
-    nn.Linear(4, 10),
+    nn.Linear(4, 4),
     nn.ReLU(),
-    nn.Linear(10, 1)
+    nn.Linear(4, 1)
 ).double()
 
 
@@ -73,7 +74,7 @@ for ep in range(epoch):
         total_loss += loss.item()
 
         loss_calc, acc = compute_loss_and_acc(yb_numpy, y_pred.detach().numpy(),
-                                acceptable_diff=0.01)
+                                acceptable_diff=0.02)
         training_acc[ep] += acc / batch_num
 
         optimizer.zero_grad()
@@ -118,3 +119,5 @@ plt.ylabel("NN Angle Estimate")
 plt.title("Angle output")
 plt.legend()
 plt.show()
+
+print("Seed used:", seed)
