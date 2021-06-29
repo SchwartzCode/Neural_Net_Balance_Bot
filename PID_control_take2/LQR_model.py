@@ -111,9 +111,6 @@ class pendulum_bot(object):
 
         for i in range(timesteps):
             u = -K @ ( self.state - desired_state )
-            # u += K @ np.array([0., 0., 0.05, 0.])
-            # u *= (0.18*2) / 0.75
-            # u *= 0.7
             self.update_state(dt, u)
             states = np.hstack([states, self.state])
 

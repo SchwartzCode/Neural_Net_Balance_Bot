@@ -42,13 +42,14 @@ class data_generator(object):
                                   x_gyro_vals]).T
 
         # 0 will be replaced by angle prediction output from angle network
-        controller_inputs = np.vstack([np.zeros(num_points), encoder_vals, last_encoder_vals]).T
+        controller_inputs = np.vstack([np.zeros(num_points), x_gyro_vals,
+                                       encoder_vals, last_encoder_vals]).T
 
         outputs = []
         angles = []
         for i, datum in enumerate(inputs):
             output = self.calculate_PID_output(datum)
-            # outputs.append(output)
+            controller_inputs[i,0] = self.angle
             angles.append(self.angle)
             outputs.append(output)
 
