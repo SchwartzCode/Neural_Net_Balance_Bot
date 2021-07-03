@@ -3,18 +3,24 @@ import torch
 import numpy as np
 
 angle_net = torch.load('./good_angle_network')
-# angle_net.eval()
-print(angle_net)
-print(angle_net.keys())
+controller_net = torch.load('controller_network')
 
-# ['0.weight', '0.bias', '2.weight', '2.bias']
-w0 = angle_net['0.weight']
-b0 = angle_net['0.bias']
-w2 = angle_net['2.weight']
-b2 = angle_net['2.bias']
-print("woo")
+ang_w0 = angle_net['0.weight']
+ang_b0 = angle_net['0.bias']
+ang_w2 = angle_net['2.weight']
+ang_b2 = angle_net['2.bias']
 
-np.savetxt('network_weights/w0.txt', w0.numpy())
-np.savetxt('network_weights/b0.txt', b0.numpy())
-np.savetxt('network_weights/w2.txt', w2.numpy())
-np.savetxt('network_weights/b2.txt', b2.numpy())
+np.savetxt('network_weights/ang_w0.txt', ang_w0.numpy())
+np.savetxt('network_weights/ang_b0.txt', ang_b0.numpy())
+np.savetxt('network_weights/ang_w2.txt', ang_w2.numpy())
+np.savetxt('network_weights/ang_b2.txt', ang_b2.numpy())
+
+controller_w0 = angle_net['0.weight']
+controller_b0 = angle_net['0.bias']
+controller_w2 = angle_net['2.weight']
+controller_b2 = angle_net['2.bias']
+
+np.savetxt('network_weights/controller_w0.txt', controller_w0.numpy())
+np.savetxt('network_weights/controller_b0.txt', controller_b0.numpy())
+np.savetxt('network_weights/controller_w2.txt', controller_w2.numpy())
+np.savetxt('network_weights/controller_b2.txt', controller_b2.numpy())
