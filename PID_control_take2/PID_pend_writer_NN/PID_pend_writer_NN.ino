@@ -33,28 +33,43 @@ float P = 0.0;
 float I = 0.0;
 float D = 0.0;
 
-// initialize matrices for synapse weights
-//    note: that this matrix is called hidden2 because it eventually holds hidden2, but initially it
-//      holds hidden1 transposed
-mtx_type hidden1_T[4][4] = {{ 1.4621,  0.7608,  0.3224, -0.0466},
-        {-6.9008, -2.3136, -1.5420,  0.4045},
-        {-7.0260, -1.7432, -7.0833,  0.5906},
-        { 0.4640, -0.9705,  5.5680, -0.6428}};
-mtx_type hidden1[4][4];
+// initialize matrices for synapse weights and biases
+const mtx_type ang_b0[6][1] = { {0.001547},
+                                {0.320026},
+                                {0.340354},
+                                {0.010771},
+                                {1.562025},
+                                {2.029194}};
+                                
+const mtx_type ang_w0[6][4] = {{0.000343, -0.070401, -1.655140, -0.002654},
+                              {-0.009620, -0.214173, 0.294059, 0.002841},
+                              {0.026603, -0.230408, -0.318019, 0.000271},
+                              {-0.002329, -0.061315, 1.544243, 0.002200},
+                              {-0.814444, 0.020287, -0.337145, 0.006185},
+                              {-0.225695, 0.027229, 0.540696, 0.012758}};
 
-mtx_type hidden2_T[4][4] = {{-0.7894,  1.2954,  1.6756, -1.0369},
-        { 0.0145,  0.0259,  0.5214, -1.1769},
-        {-0.7504,  1.3959,  1.7393, -1.0195},
-        {-1.0285, -1.3415, -2.0490, -1.5206}};
-mtx_type hidden2[4][4];
+const mtx_type ang_b1[1] = {0.029889};
 
-mtx_type hidden3_T[4][4] = {{ 1.5537,  0.6382,  1.2401, -3.7253},
-        { 0.9798,  1.3929,  0.8834, -2.2312},
-        { 0.8629,  0.6869,  1.5094, -3.3553},
-        { 0.1385, -1.5287, -0.1665,  3.0042}};
-mtx_type hidden3[4][4];
+const mtx_type ang_w1[6] = {0.701578, 0.119854, -0.109671, -0.754005, -1.482640, 1.128075};
 
-const mtx_type output[1][4] = {{  -1.4852, -1.3687, -1.5994,  1.9713 }};
+const mtx_type controller_b0[6][1] = {{0.001547},
+                                      {0.320026},
+                                      {0.340354},
+                                      {0.010771},
+                                      {1.562025},
+                                      {2.029194}};
+
+const mtx_type controller_w0[6][4] = {{0.000343, -0.070401, -1.655140, -0.002654},
+                                      {-0.009620, -0.214173, 0.294059, 0.002841},
+                                      {0.026603, -0.230408, -0.318019, 0.000271},
+                                      {-0.002329, -0.061315, 1.544243, 0.002200},
+                                      {-0.814444, 0.020287, -0.337145, 0.006185},
+                                      {-0.225695, 0.027229, 0.540696, 0.012758}};
+
+const mtx_type controller_b1[1] = {0.029889};
+
+const mtx_type controller_w1[6] = {0.701578, 0.119854, -0.109671, -0.754005, -1.482640, 1.128075};
+
   
 void setup(void) {
 
@@ -144,11 +159,6 @@ void setup(void) {
   // toggle pins connected to motor controller to output
   pinMode(12, OUTPUT);
   pinMode(13, OUTPUT);
-
-  // reshape matrices to make multiplication easier
-  Matrix.Transpose((mtx_type*)hidden1_T, 4, 4, (mtx_type*)hidden1);
-  Matrix.Transpose((mtx_type*)hidden2_T, 4, 4, (mtx_type*)hidden2);
-  Matrix.Transpose((mtx_type*)hidden3_T, 4, 4, (mtx_type*)hidden3);
 }
 
 
@@ -191,18 +201,6 @@ void loop() {
   int outPWM = abs(PID_PWM);
 
   Serial.println(PID_PWM);
-//  delay(1000);
-
-  // print values that will be used to train Neural Network
-//  Serial.print(y_accel);
-//  Serial.print(" ");
-//  Serial.print(x_accel);
-//  Serial.print(" ");
-//  Serial.print(gyro_x);
-//  Serial.print(" ");
-//  Serial.print(I_error);
-//  Serial.print(" ");
-//  Serial.println(PID_PWM);
 
   // clip PWM value at limits of range (0 and 255)
   if (outPWM > maxPWM) {
@@ -247,40 +245,41 @@ void loop() {
 
 double feedForward(float in1, float in2, float in3, float in4) {
 
-  mtx_type input[4] = {in1,in2,in3,in4};
+//  mtx_type input[4] = {in1,in2,in3,in4};
+//
+////  Matrix.Print((mtx_type*)input, 1, 4, "input");
+//
+//  mtx_type tmp1[4];
+//  Matrix.Multiply((mtx_type*)input, (mtx_type*)hidden1, 1, 4, 4, (mtx_type*)tmp1);
+//
+//   
+//  // apply activation function
+//  for(int i=0;i<4;i++){
+//    prelu(tmp1[i]);
+//  }
+//
+//  mtx_type tmp2[4];
+//  Matrix.Multiply((mtx_type*)tmp1, (mtx_type*)hidden2, 1, 4, 4, (mtx_type*)tmp2);
+//  // apply activation func
+//  for(int i=0; i<4;i++){
+//    prelu(tmp2[i]);
+//  }
+//
+//  mtx_type tmp3[4];
+//  Matrix.Multiply((mtx_type*)tmp2, (mtx_type*)hidden3, 1, 4, 4, (mtx_type*)tmp3);
+//
+//  //apply activation func
+//  for(int i=0;i<4;i++){
+//    prelu(tmp3[i]);
+//  }
+//  
+//  mtx_type tmp_output[1];
+//  Matrix.Multiply((mtx_type*)tmp3, (mtx_type*)output, 1, 4, 1, (mtx_type*)tmp_output);
+//
+//  double NN_PWM = 6.5*tmp_output[0];
 
-//  Matrix.Print((mtx_type*)input, 1, 4, "input");
-
-  mtx_type tmp1[4];
-  Matrix.Multiply((mtx_type*)input, (mtx_type*)hidden1, 1, 4, 4, (mtx_type*)tmp1);
-
-   
-  // apply activation function
-  for(int i=0;i<4;i++){
-    prelu(tmp1[i]);
-  }
-
-  mtx_type tmp2[4];
-  Matrix.Multiply((mtx_type*)tmp1, (mtx_type*)hidden2, 1, 4, 4, (mtx_type*)tmp2);
-  // apply activation func
-  for(int i=0; i<4;i++){
-    prelu(tmp2[i]);
-  }
-
-  mtx_type tmp3[4];
-  Matrix.Multiply((mtx_type*)tmp2, (mtx_type*)hidden3, 1, 4, 4, (mtx_type*)tmp3);
-
-  //apply activation func
-  for(int i=0;i<4;i++){
-    prelu(tmp3[i]);
-  }
-  
-  mtx_type tmp_output[1];
-  Matrix.Multiply((mtx_type*)tmp3, (mtx_type*)output, 1, 4, 1, (mtx_type*)tmp_output);
-
-  double NN_PWM = 6.5*tmp_output[0];
-
-  return NN_PWM;
+//  return NN_PWM;
+  return 0.0;
 }
 
 // better activation function
