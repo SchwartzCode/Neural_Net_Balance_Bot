@@ -148,8 +148,8 @@ double  estimateAngle(){
   mpu.getEvent(&a, &g, &temp);
 
   // correct for IMU offsets (determined experimentally)
-  double y_accel = a.acceleration.y + 0.77;
-  double z_accel = a.acceleration.z +  1.78;
+  double y_accel = a.acceleration.y + 0.41;
+  double z_accel = a.acceleration.z +  1.76;
   double gyro_x = g.gyro.x + 0.05;
 
   mtx_type angle_inputs[4] = {angle, y_accel, z_accel, gyro_x};
@@ -237,11 +237,11 @@ void loop() {
 
   double st_time = millis();
 
-  double gyro_x = estimateAngle_old();
+  double gyro_x = estimateAngle();
 
 //  double NN_PWM = 200*(get_controller_PWM_output(gyro_x) + 3.27);
 
-  double NN_PWM = get_controller_PWM_output(gyro_x);
+  double NN_PWM = (get_controller_PWM_output(gyro_x) + 150)/2;
 
   Serial.println(NN_PWM);
 
