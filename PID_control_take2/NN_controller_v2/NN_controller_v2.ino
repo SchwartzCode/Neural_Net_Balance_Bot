@@ -14,7 +14,7 @@ Adafruit_MPU6050 mpu; //initialize IMU object
 
 // constant used to blend accelerometer & gyroscope angle estimates
 //(1-alpha)*angle_gyro
-#define alpha  0.05 
+#define alpha  0.01 
 
 // constants for calculating distance travelled from encoder ticks
 #define TICKS_PER_REV  1920
@@ -25,7 +25,6 @@ byte newEncoderData = 0;
 
 // initialize variables
 float angle = 0.0;
-int last_output = 0;
 
 // encoder variables
 const byte encoder0pinA = 2;//A pin -> the interrupt pin 0
@@ -53,23 +52,22 @@ const mtx_type ang_b1[1] = {0.029889};
 
 const mtx_type ang_w1[6] = {0.701578, 0.119854, -0.109671, -0.754005, -1.482640, 1.128075};
 
-const mtx_type controller_b0[6][1] = {{0.001547},
-                                      {0.320026},
-                                      {0.340354},
-                                      {0.010771},
-                                      {1.562025},
-                                      {2.029194}};
+const mtx_type controller_b0[10] = {69.424779, 38.800773, -22.075909, 24.171999, -41.841173, 73.247611, 22.064980, 68.565580, 70.631389, 67.490661};
 
-const mtx_type controller_w0[6][4] = {{0.000343, -0.070401, -1.655140, -0.002654},
-                                      {-0.009620, -0.214173, 0.294059, 0.002841},
-                                      {0.026603, -0.230408, -0.318019, 0.000271},
-                                      {-0.002329, -0.061315, 1.544243, 0.002200},
-                                      {-0.814444, 0.020287, -0.337145, 0.006185},
-                                      {-0.225695, 0.027229, 0.540696, 0.012758}};
+const mtx_type controller_w0[10][4] = {{-92.130003, -11.383237, 0.001622, 0.003370},
+                                        {-1.071874, 0.719454, 0.164862, 0.057819},
+                                        {-5.748949, -0.186725, -0.866918, 0.866590},
+                                        {-5.235241, -0.098730, -0.847529, 0.847407},
+                                        {3.507712, -0.139213, 0.148451, 0.071223},
+                                        {101.147043, 8.912909, 0.003575, 0.001770},
+                                        {27.889909, -1.397374, 0.020041, 0.042015},
+                                        {-89.145994, -9.495121, 0.004560, 0.001643},
+                                        {-91.915353, -9.571799, 0.005561, 0.001730},
+                                        {-92.772081, -11.135399, 0.003760, 0.004060}};
 
-const mtx_type controller_b1[1] = {0.029889};
+const mtx_type controller_b1[1] = {5.516958};
 
-const mtx_type controller_w1[6] = {0.701578, 0.119854, -0.109671, -0.754005, -1.482640, 1.128075};
+const mtx_type controller_w1[10] = {-4.160996, 0.689487, 2.981413, -3.058985, -0.826596, 14.669138, 0.645700, -1.421339, -7.370391, -3.454843};
 
 void setup(void) {
 
@@ -137,8 +135,8 @@ void readEncoder()
   }
   encoder0PinALast = Lstate;
 
-  if(!Direction)  wheel_pos++;
-  else  wheel_pos--;
+  if(!Direction)  wheel_pos--;
+  else  wheel_pos++;
 }
 
 /*
@@ -150,14 +148,34 @@ double  estimateAngle(){
   mpu.getEvent(&a, &g, &temp);
 
   // correct for IMU offsets (determined experimentally)
-  double y_accel = a.acceleration.y + 0.41;
-  double z_accel = a.acceleration.z +  1.76;
+  double y_accel = a.acceleration.y + 0.77;
+  double z_accel = a.acceleration.z +  1.78;
   double gyro_x = g.gyro.x + 0.05;
 
   mtx_type angle_inputs[4] = {angle, y_accel, z_accel, gyro_x};
 
   double new_angle_est = angle_feed_forward(angle_inputs);
   angle = new_angle_est;
+
+  return gyro_x;
+}
+
+double estimateAngle_old(){
+    /* Get new sensor events with the readings */
+  sensors_event_t a, g, temp;
+  mpu.getEvent(&a, &g, &temp);
+
+  // correct for IMU offsets (determined experimentally)
+  double y_accel = a.acceleration.y + 0.41;
+  double z_accel = a.acceleration.z +  1.76;
+  double gyro_x = g.gyro.x + 0.05;
+
+  // calculate accelerometer & gyroscope angle estimates
+  double angle_accel = atan(y_accel / z_accel);
+  double angle_gyro = angle + gyro_x * dt;
+
+  // blend two estimates together
+  angle = (1 - alpha) * (angle_gyro) + alpha*angle_accel;
 
   return gyro_x;
 }
@@ -177,17 +195,21 @@ double angle_feed_forward(mtx_type inputs[4]){
 }
 
 double get_controller_PWM_output(double gyro_x){
-  mtx_type inputs[4] = {angle, gyro_x, wheel_pos, wheel_pos_last};
+  double tmp_angle = (angle + 3.36)/2.5;
+  mtx_type inputs[4] = {tmp_angle, gyro_x, 0.0, 0.0};
 
-  mtx_type tmp1[6];
-  Matrix.Multiply((mtx_type*)controller_w0, (mtx_type*)inputs, 6, 4, 1, (mtx_type*)tmp1);
+
+//  mtx_type inputs[4] = {tmp_angle, gyro_x, wheel_pos, wheel_pos_last};
+
+  mtx_type tmp1[10];
+  Matrix.Multiply((mtx_type*)controller_w0, (mtx_type*)inputs, 10, 4, 1, (mtx_type*)tmp1);
 
   for(int i=0; i<sizeof(tmp1)/sizeof(tmp1[0]); i++){
-    tmp1[i] = relu(tmp1[i] + controller_b0[i][0]);
+    tmp1[i] = relu(tmp1[i] + controller_b0[i]);
   }
 
   mtx_type tmp2[1];
-  Matrix.Multiply((mtx_type*)controller_w1, (mtx_type*)tmp1, 1, 6, 1, (mtx_type*)tmp2);
+  Matrix.Multiply((mtx_type*)controller_w1, (mtx_type*)tmp1, 1, 10, 1, (mtx_type*)tmp2);
 
   wheel_pos_last = wheel_pos;
 
@@ -213,13 +235,17 @@ template <typename T> int sgn(T val) {
 
 void loop() {
 
-  double gyro_x = estimateAngle();
+  double st_time = millis();
 
-  double NN_PWM = 250*(get_controller_PWM_output(gyro_x) + 3.27);
+  double gyro_x = estimateAngle_old();
 
-  int outPWM = (int) abs(NN_PWM);
+//  double NN_PWM = 200*(get_controller_PWM_output(gyro_x) + 3.27);
+
+  double NN_PWM = get_controller_PWM_output(gyro_x);
 
   Serial.println(NN_PWM);
+
+  int outPWM = (int) abs(NN_PWM);
 
     // clip PWM value at limits of range (0 and 255)
   if (outPWM > maxPWM) {
@@ -244,5 +270,4 @@ void loop() {
     analogWrite(3, outPWM);
     analogWrite(11, outPWM);
   
-  last_output = outPWM;
 }
