@@ -8,8 +8,5 @@
 # ignore folder of example IMU files
 Adafruit_MPU6050-master/
 
-# ignore archived files
-archive/
-
 # ignore compiled python files
 __pycache__/
