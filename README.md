@@ -5,31 +5,31 @@ Using simple neural networks to replicate sensor fusion and dual-loop PID contro
 
 ## Repository Contents
 
-CAD_files/ - files used to 3D print robot's body
+**CAD_files/** - files used to 3D print robot's body
 
-components/ - arduino files for testing different components before integrating together
+**components/** - arduino files for testing different components before integrating together
 
-PID_controller/ - arduino file for dual-loop PID controller
+**PID_controller/** - arduino file for dual-loop PID controller
 
-NN_controller/ - arduino file for neural network(s) controller
+**NN_controller/** - arduino file for neural network(s) controller
 
-LQR_control_arduino/ - arduino file for LQR controller (currently not working)
+**LQR_control_arduino/** - arduino file for LQR controller (currently not working)
 
-LQR_model.py - script to generate LQR gains from state dynamics and simulate performance
+**LQR_model.py** - script to generate LQR gains from state dynamics and simulate performance
 
-NN_angle_predictor.py - script to train network that predicts robot attiude from sensor readings
+**NN_angle_predictor.py** - script to train network that predicts robot attiude from sensor readings
 
-NN_arctangent.py - script to approximate arctangent with a neural net (sanity checking)
+**NN_arctangent.py** - script to approximate arctangent with a neural net (sanity checking)
 
-NN_data_generator.py - script to generate training data (randomly generates inputs and calculates PID outputs) for angle prediction and controller networks
+**NN_data_generator.py** - script to generate training data (randomly generates inputs and calculates PID outputs) for angle prediction and controller networks
 
-NN_PID_controller.py - script to train controller network
+**NN_PID_controller.py** - script to train controller network
 
-NN_util_funcs.py - utiliy functions for neural network training (random batch selection and calculating loss and accuracy)
+**NN_util_funcs.py** - utiliy functions for neural network training (random batch selection and calculating loss and accuracy)
 
-NN_weights_saver.py - saves neural network weights to .txt files for easy copying into .ino files
+**NN_weights_saver.py** - saves neural network weights to .txt files for easy copying into .ino files
 
-pend_bot_LQR_requirements.txt - run `pip install -r pend_bot_LQR_requirements.txt` in an anaconda environment to install dependencies for LQR python scripts (or just download the packages listed in the file)
+**pend_bot_LQR_requirements.txt** - run `pip install -r pend_bot_LQR_requirements.txt` in an anaconda environment to install dependencies for LQR python scripts (or just download the packages listed in the file)
 
 ## Neural network structures
 
