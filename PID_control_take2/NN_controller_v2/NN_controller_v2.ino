@@ -135,8 +135,8 @@ void readEncoder()
   }
   encoder0PinALast = Lstate;
 
-  if(!Direction)  wheel_pos--;
-  else  wheel_pos++;
+  if(!Direction)  wheel_pos++;
+  else  wheel_pos--;
 }
 
 /*
@@ -196,10 +196,10 @@ double angle_feed_forward(mtx_type inputs[4]){
 
 double get_controller_PWM_output(double gyro_x){
   double tmp_angle = (angle + 3.36)/2.5;
-  mtx_type inputs[4] = {tmp_angle, gyro_x, 0.0, 0.0};
+//  mtx_type inputs[4] = {tmp_angle, gyro_x, 0.0, 0.0};
 
 
-//  mtx_type inputs[4] = {tmp_angle, gyro_x, wheel_pos, wheel_pos_last};
+  mtx_type inputs[4] = {tmp_angle, gyro_x, wheel_pos, wheel_pos_last};
 
   mtx_type tmp1[10];
   Matrix.Multiply((mtx_type*)controller_w0, (mtx_type*)inputs, 10, 4, 1, (mtx_type*)tmp1);
