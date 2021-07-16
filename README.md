@@ -1,6 +1,9 @@
 
 # "Smart" Self Balancing Robot
 
+![IMG_9093](https://user-images.githubusercontent.com/496532/125873024-a41c8e8c-5947-4981-8f8b-3741dd35afd8.JPG)
+
+
 Using simple neural networks to replicate sensor fusion and dual-loop PID control of a self-balancing robot. The inner PID loop controls the robot's attitude, and the outer controls its translational position. The robot uses an [MPU-6050 IMU](https://www.adafruit.com/product/3886) (gyroscope + accelerometer) for feedback on its attitude and an encoder on one of its wheels for feedback on its position.
 
 ## Repository Contents
