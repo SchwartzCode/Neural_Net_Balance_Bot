@@ -6,6 +6,10 @@
 
 Using simple neural networks to replicate sensor fusion and dual-loop PID control of a self-balancing robot. The inner PID loop controls the robot's attitude, and the outer controls its translational position. The robot uses an [MPU-6050 IMU](https://www.adafruit.com/product/3886) (gyroscope + accelerometer) for feedback on its attitude and an encoder on one of its wheels for feedback on its position.
 
+I made youtube videos outlining this project:
+* [Video 1](https://www.youtube.com/watch?v=KaacP7z0tLA)
+* [Video 2](https://www.youtube.com/watch?v=LnMYHBKPsfQ)
+
 ## Repository Contents
 
 **CAD_files/** - files used to 3D print robot's body
